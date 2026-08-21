@@ -1,0 +1,14 @@
+.DS_Store
+
+# Xcode 构建产物
+build/
+DerivedData/
+*.build/
+
+# Xcode 个人配置
+xcuserdata/
+*.xcuserstate
+
+# Swift Package Manager
+.swiftpm/
+.build/

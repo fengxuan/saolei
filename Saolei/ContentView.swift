@@ -1,0 +1,164 @@
+import SwiftUI
+
+enum SaoleiPalette {
+    static let background = Color(red: 0.95, green: 0.97, blue: 1.0)
+    static let card = Color.white
+    static let ink = Color(red: 0.10, green: 0.14, blue: 0.22)
+    static let mutedInk = Color(red: 0.38, green: 0.45, blue: 0.56)
+    static let blue = Color(red: 0.22, green: 0.47, blue: 0.92)
+    static let blueDeep = Color(red: 0.12, green: 0.31, blue: 0.72)
+    static let mint = Color(red: 0.20, green: 0.72, blue: 0.58)
+    static let sky = Color(red: 0.22, green: 0.62, blue: 0.92)
+    static let orange = Color(red: 0.96, green: 0.53, blue: 0.22)
+    static let purple = Color(red: 0.54, green: 0.39, blue: 0.89)
+    static let hiddenCell = Color(red: 0.82, green: 0.88, blue: 0.96)
+    static let revealedCell = Color(red: 0.97, green: 0.98, blue: 1.0)
+}
+
+struct ContentView: View {
+    var body: some View {
+        ZStack {
+            SaoleiPalette.background.ignoresSafeArea()
+
+            GeometryReader { proxy in
+                VStack(spacing: 24) {
+                    selectionHeader
+
+                    Text("选择一个难度开始游戏")
+                        .font(.system(size: 21, weight: .bold, design: .rounded))
+                        .foregroundStyle(SaoleiPalette.mutedInk)
+
+                    LazyVGrid(
+                        columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: proxy.size.width > 700 ? 4 : 2),
+                        spacing: 16
+                    ) {
+                        ForEach(GameDifficulty.allCases) { difficulty in
+                            NavigationLink {
+                                GameView(difficulty: difficulty)
+                            } label: {
+                                DifficultyCard(difficulty: difficulty)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .frame(maxWidth: 900)
+
+                    Spacer(minLength: 0)
+
+                    Text("第一次玩可以从“小小新手”开始")
+                        .font(.system(size: 16, weight: .medium, design: .rounded))
+                        .foregroundStyle(SaoleiPalette.mutedInk)
+                }
+                .frame(maxWidth: 900, maxHeight: .infinity)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 24)
+            }
+        }
+        .navigationBarHidden(true)
+    }
+
+    private var selectionHeader: some View {
+        VStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(SaoleiPalette.blue)
+                    .frame(width: 82, height: 82)
+                Text("💣")
+                    .font(.system(size: 42))
+            }
+
+            Text("小小扫雷队")
+                .font(.system(size: 42, weight: .black, design: .rounded))
+                .foregroundStyle(SaoleiPalette.ink)
+
+            Text("动动脑筋，找出所有安全的格子！")
+                .font(.system(size: 18, weight: .medium, design: .rounded))
+                .foregroundStyle(SaoleiPalette.mutedInk)
+        }
+    }
+}
+
+private struct DifficultyCard: View {
+    let difficulty: GameDifficulty
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(accentColor)
+                    .frame(width: 14, height: 14)
+                Text(difficulty.title)
+                    .font(.system(size: 20, weight: .black, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.ink)
+            }
+
+            Text(difficulty.subtitle)
+                .font(.system(size: 15, weight: .medium, design: .rounded))
+                .foregroundStyle(SaoleiPalette.mutedInk)
+
+            HStack {
+                Text("开始挑战")
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                Spacer()
+                Image(systemName: "arrow.right.circle.fill")
+                    .font(.system(size: 21, weight: .bold))
+            }
+            .foregroundStyle(accentColor)
+            .padding(.top, 8)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(20)
+        .background(SaoleiPalette.card)
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(accentColor.opacity(0.28), lineWidth: 2)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .shadow(color: SaoleiPalette.blue.opacity(0.10), radius: 12, y: 6)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("难度：\(difficulty.title)，\(difficulty.subtitle)，开始挑战")
+    }
+
+    private var accentColor: Color {
+        switch difficulty.accent {
+        case .mint: return SaoleiPalette.mint
+        case .sky: return SaoleiPalette.sky
+        case .orange: return SaoleiPalette.orange
+        case .purple: return SaoleiPalette.purple
+        }
+    }
+}
+
+struct StatView: View {
+    let title: String
+    let value: String
+    let symbol: String
+    let tint: Color
+
+    var body: some View {
+        HStack(spacing: 9) {
+            Image(systemName: symbol)
+                .font(.system(size: 20, weight: .bold))
+                .foregroundStyle(tint)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.mutedInk)
+                Text(value)
+                    .font(.system(size: 24, weight: .black, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.ink)
+                    .monospacedDigit()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+#Preview("选择难度") {
+    NavigationStack {
+        ContentView()
+    }
+}

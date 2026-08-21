@@ -1,0 +1,27 @@
+name: Saolei
+
+options:
+  bundleIdPrefix: com.jianfengxuan
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: 5.0
+    TARGETED_DEVICE_FAMILY: "2"
+    SUPPORTS_MACCATALYST: NO
+
+targets:
+  Saolei:
+    type: application
+    platform: iOS
+    sources:
+      - path: Saolei
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jianfengxuan.saolei
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: 扫雷小勇士
+        INFOPLIST_KEY_LSRequiresIPhoneOS: YES
+        IPHONEOS_DEPLOYMENT_TARGET: "16.0"
