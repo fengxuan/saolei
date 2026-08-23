@@ -24,7 +24,15 @@ struct ContentView: View {
                 VStack(spacing: 24) {
                     selectionHeader
 
-                    Text("选择一个难度开始游戏")
+                    NavigationLink {
+                        TetrisView()
+                    } label: {
+                        TetrisEntryCard()
+                    }
+                    .buttonStyle(.plain)
+                    .frame(maxWidth: 900)
+
+                    Text("选择扫雷难度")
                         .font(.system(size: 21, weight: .bold, design: .rounded))
                         .foregroundStyle(SaoleiPalette.mutedInk)
 
@@ -68,14 +76,53 @@ struct ContentView: View {
                     .font(.system(size: 42))
             }
 
-            Text("小小扫雷队")
+            Text("小小游戏乐园")
                 .font(.system(size: 42, weight: .black, design: .rounded))
                 .foregroundStyle(SaoleiPalette.ink)
 
-            Text("动动脑筋，找出所有安全的格子！")
+            Text("动动脑筋，挑战扫雷和俄罗斯方块！")
                 .font(.system(size: 18, weight: .medium, design: .rounded))
                 .foregroundStyle(SaoleiPalette.mutedInk)
         }
+    }
+}
+
+private struct TetrisEntryCard: View {
+    var body: some View {
+        HStack(spacing: 16) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(SaoleiPalette.purple.opacity(0.16))
+                    .frame(width: 70, height: 70)
+                Text("🧩")
+                    .font(.system(size: 37))
+            }
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text("俄罗斯方块")
+                    .font(.system(size: 21, weight: .black, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.ink)
+                Text("移动、旋转方块，拼满一行就消除")
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.mutedInk)
+            }
+
+            Spacer(minLength: 0)
+
+            Image(systemName: "arrow.right.circle.fill")
+                .font(.system(size: 25, weight: .bold))
+                .foregroundStyle(SaoleiPalette.purple)
+        }
+        .padding(16)
+        .background(SaoleiPalette.card)
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(SaoleiPalette.purple.opacity(0.32), lineWidth: 2)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .shadow(color: SaoleiPalette.purple.opacity(0.11), radius: 12, y: 6)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("俄罗斯方块，移动、旋转方块，拼满一行就消除，开始游戏")
     }
 }
 
