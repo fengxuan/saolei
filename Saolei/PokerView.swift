@@ -28,10 +28,11 @@ struct PokerView: View {
             PokerPalette.background.ignoresSafeArea()
 
             GeometryReader { proxy in
-                let useLandscapeLayout = horizontalSizeClass == .regular && proxy.size.width > proxy.size.height
+                let isIPadLayout = horizontalSizeClass == .regular
+                let isLandscape = proxy.size.width > proxy.size.height
 
-                if useLandscapeLayout {
-                    landscapeLayout
+                if isIPadLayout {
+                    iPadLayout(isLandscape: isLandscape, size: proxy.size)
                 } else {
                     ScrollView {
                         VStack(spacing: 14) {
@@ -54,26 +55,59 @@ struct PokerView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
-    private var landscapeLayout: some View {
-        VStack(spacing: 8) {
+    @ViewBuilder
+    private func iPadLayout(isLandscape: Bool, size: CGSize) -> some View {
+        if isLandscape {
+            iPadLandscapeLayout(size: size)
+        } else {
+            iPadPortraitLayout(size: size)
+        }
+    }
+
+    private func iPadLandscapeLayout(size: CGSize) -> some View {
+        let horizontalPadding = min(30, max(18, size.width * 0.025))
+        let actionWidth = min(300, max(252, size.width * 0.25))
+
+        return VStack(spacing: 10) {
             HStack(alignment: .center, spacing: 16) {
                 gameHeader
                 scoreCard
-                    .frame(width: 400)
+                    .frame(width: min(390, size.width * 0.40))
             }
 
-            HStack(alignment: .top, spacing: 16) {
-                pokerTable(isLandscape: true)
+            HStack(alignment: .top, spacing: 14) {
+                pokerTable(isLandscape: true, fillsAvailableHeight: true)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
                 actionPanel(isCompact: true)
-                    .frame(width: 280)
+                    .frame(width: actionWidth, alignment: .top)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .frame(maxWidth: 1_240, maxHeight: .infinity, alignment: .top)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(.horizontal, horizontalPadding)
+        .padding(.vertical, 10)
+    }
+
+    private func iPadPortraitLayout(size: CGSize) -> some View {
+        let horizontalPadding = min(28, max(18, size.width * 0.035))
+
+        return VStack(spacing: 10) {
+            VStack(spacing: 8) {
+                gameHeader
+                scoreCard
             }
 
-            rulesCard
+            pokerTable(isLandscape: false, fillsAvailableHeight: true)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            actionPanel(isCompact: false)
         }
-        .frame(maxWidth: 1_040, maxHeight: .infinity, alignment: .top)
+        .frame(maxWidth: 820, maxHeight: .infinity, alignment: .top)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .padding(.horizontal, 20)
-        .padding(.vertical, 8)
+        .padding(.horizontal, horizontalPadding)
+        .padding(.vertical, 10)
     }
 
     private var gameHeader: some View {
@@ -120,14 +154,44 @@ struct PokerView: View {
     }
 
     private var pokerTable: some View {
-        pokerTable(isLandscape: false)
+        pokerTable(isLandscape: false, fillsAvailableHeight: false)
     }
 
-    private func pokerTable(isLandscape: Bool) -> some View {
+    private func pokerTable(isLandscape: Bool, fillsAvailableHeight: Bool) -> some View {
+        Group {
+            if fillsAvailableHeight {
+                pokerTableBody(isLandscape: isLandscape)
+                    .frame(maxHeight: .infinity)
+            } else {
+                pokerTableBody(isLandscape: isLandscape)
+                    .frame(height: pokerTableHeight(isLandscape: isLandscape))
+            }
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .fill(PokerPalette.felt)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                .stroke(PokerPalette.gold.opacity(0.35), lineWidth: 2)
+        }
+        .shadow(color: PokerPalette.feltDeep.opacity(0.28), radius: 16, y: 9)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("德州扑克牌桌，\(game.street.title)，底池 \(game.pot)")
+    }
+
+    private func pokerTableBody(isLandscape: Bool) -> some View {
         GeometryReader { proxy in
-            let cardWidth = min(isLandscape ? 54 : 62, max(42, (proxy.size.width - 68) / 5))
-            let tableSpacing: CGFloat = isLandscape ? 8 : 12
-            let tablePadding: CGFloat = isLandscape ? 12 : 16
+            let tableSpacing: CGFloat = isLandscape ? 9 : (horizontalSizeClass == .regular ? 10 : 12)
+            let tablePadding: CGFloat = isLandscape ? 16 : (horizontalSizeClass == .regular ? 18 : 16)
+            let cardSpacing: CGFloat = isLandscape ? 9 : 8
+            let widthLimited = (proxy.size.width - tablePadding * 2 - cardSpacing * 4) / 5
+            let fixedHeight = tablePadding * 2 + 24 + 18 + 1 + 24 + tableSpacing * 6
+            let heightLimited = (proxy.size.height - fixedHeight) / 4.26
+            let maxCardWidth: CGFloat = horizontalSizeClass == .regular
+                ? (isLandscape ? 112 : 102)
+                : 62
+            let cardWidth = max(38, min(maxCardWidth, widthLimited, heightLimited))
 
             VStack(spacing: tableSpacing) {
                 HStack {
@@ -138,7 +202,7 @@ struct PokerView: View {
                         .foregroundStyle(.white.opacity(0.82))
                 }
 
-                HStack(spacing: 8) {
+                HStack(spacing: cardSpacing) {
                     ForEach(0..<2, id: \.self) { index in
                         if game.shouldRevealBotCards {
                             PokerCardView(card: game.botCards[index], isHidden: false, width: cardWidth)
@@ -152,7 +216,7 @@ struct PokerView: View {
                     .font(.system(size: 13, weight: .bold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.72))
 
-                HStack(spacing: 8) {
+                HStack(spacing: cardSpacing) {
                     ForEach(0..<5, id: \.self) { index in
                         PokerCardView(
                             card: index < game.communityCards.count ? game.communityCards[index] : nil,
@@ -173,7 +237,7 @@ struct PokerView: View {
                         .foregroundStyle(.white.opacity(0.66))
                 }
 
-                HStack(spacing: 8) {
+                HStack(spacing: cardSpacing) {
                     ForEach(game.playerCards) { card in
                         PokerCardView(card: card, isHidden: false, width: cardWidth)
                     }
@@ -183,18 +247,6 @@ struct PokerView: View {
             .padding(.horizontal, isLandscape ? 14 : 18)
             .padding(.vertical, tablePadding)
         }
-        .frame(height: pokerTableHeight(isLandscape: isLandscape))
-        .background(
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .fill(PokerPalette.felt)
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .stroke(PokerPalette.gold.opacity(0.35), lineWidth: 2)
-        }
-        .shadow(color: PokerPalette.feltDeep.opacity(0.28), radius: 16, y: 9)
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("德州扑克牌桌，\(game.street.title)，底池 \(game.pot)")
     }
 
     private func tablePlayerLabel(name: String, icon: String, tint: Color) -> some View {
