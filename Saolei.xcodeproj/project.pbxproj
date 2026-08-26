@@ -13,6 +13,8 @@
 		D0E2D8D18AAB7661A8413DD7 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6B89D9088A77F03E3D619BF /* GameView.swift */; };
 		E2A7D2CB3F5F7D4C5D5B1A11 /* TetrisModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A7D2CB3F5F7D4C5D5B1A10 /* TetrisModel.swift */; };
 		E2A7D2CB3F5F7D4C5D5B1A13 /* TetrisView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A7D2CB3F5F7D4C5D5B1A12 /* TetrisView.swift */; };
+		A1B2C3D4E5F60718293A4B5C /* PokerModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5061728394A5B6C /* PokerModel.swift */; };
+		A1B2C3D4E5F60718293A4B5D /* PokerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5061728394A5B6D /* PokerView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -23,6 +25,8 @@
 		F5D24D671754F5674FCAB35F /* SaoleiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaoleiApp.swift; sourceTree = "<group>"; };
 		E2A7D2CB3F5F7D4C5D5B1A10 /* TetrisModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TetrisModel.swift; sourceTree = "<group>"; };
 		E2A7D2CB3F5F7D4C5D5B1A12 /* TetrisView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TetrisView.swift; sourceTree = "<group>"; };
+		B1C2D3E4F5061728394A5B6C /* PokerModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokerModel.swift; sourceTree = "<group>"; };
+		B1C2D3E4F5061728394A5B6D /* PokerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokerView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -51,6 +55,8 @@
 				F5D24D671754F5674FCAB35F /* SaoleiApp.swift */,
 				E2A7D2CB3F5F7D4C5D5B1A10 /* TetrisModel.swift */,
 				E2A7D2CB3F5F7D4C5D5B1A12 /* TetrisView.swift */,
+				B1C2D3E4F5061728394A5B6C /* PokerModel.swift */,
+				B1C2D3E4F5061728394A5B6D /* PokerView.swift */,
 			);
 			path = Saolei;
 			sourceTree = "<group>";
@@ -116,6 +122,8 @@
 				3764CD3A36105B55EC208FDF /* SaoleiApp.swift in Sources */,
 				E2A7D2CB3F5F7D4C5D5B1A11 /* TetrisModel.swift in Sources */,
 				E2A7D2CB3F5F7D4C5D5B1A13 /* TetrisView.swift in Sources */,
+				A1B2C3D4E5F60718293A4B5C /* PokerModel.swift in Sources */,
+				A1B2C3D4E5F60718293A4B5D /* PokerView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

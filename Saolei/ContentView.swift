@@ -21,46 +21,73 @@ struct ContentView: View {
             SaoleiPalette.background.ignoresSafeArea()
 
             GeometryReader { proxy in
-                VStack(spacing: 24) {
-                    selectionHeader
+                ScrollView {
+                    VStack(spacing: 24) {
+                        selectionHeader
 
-                    NavigationLink {
-                        TetrisView()
-                    } label: {
-                        TetrisEntryCard()
-                    }
-                    .buttonStyle(.plain)
-                    .frame(maxWidth: 900)
-
-                    Text("选择扫雷难度")
-                        .font(.system(size: 21, weight: .bold, design: .rounded))
-                        .foregroundStyle(SaoleiPalette.mutedInk)
-
-                    LazyVGrid(
-                        columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: proxy.size.width > 700 ? 4 : 2),
-                        spacing: 16
-                    ) {
-                        ForEach(GameDifficulty.allCases) { difficulty in
-                            NavigationLink {
-                                GameView(difficulty: difficulty)
-                            } label: {
-                                DifficultyCard(difficulty: difficulty)
-                            }
-                            .buttonStyle(.plain)
+                        NavigationLink {
+                            TetrisView()
+                        } label: {
+                            TetrisEntryCard()
                         }
+                        .buttonStyle(.plain)
+                        .frame(maxWidth: 900)
+
+                        NavigationLink {
+                            PokerView(difficulty: .casual)
+                        } label: {
+                            PokerEntryCard()
+                        }
+                        .buttonStyle(.plain)
+                        .frame(maxWidth: 900)
+
+                        Text("选择扫雷难度")
+                            .font(.system(size: 21, weight: .bold, design: .rounded))
+                            .foregroundStyle(SaoleiPalette.mutedInk)
+
+                        LazyVGrid(
+                            columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: proxy.size.width > 700 ? 4 : 2),
+                            spacing: 16
+                        ) {
+                            ForEach(GameDifficulty.allCases) { difficulty in
+                                NavigationLink {
+                                    GameView(difficulty: difficulty)
+                                } label: {
+                                    DifficultyCard(difficulty: difficulty)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .frame(maxWidth: 900)
+
+                        Text("选择德州扑克难度")
+                            .font(.system(size: 21, weight: .bold, design: .rounded))
+                            .foregroundStyle(SaoleiPalette.mutedInk)
+
+                        LazyVGrid(
+                            columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: proxy.size.width > 700 ? 3 : 1),
+                            spacing: 16
+                        ) {
+                            ForEach(PokerDifficulty.allCases) { difficulty in
+                                NavigationLink {
+                                    PokerView(difficulty: difficulty)
+                                } label: {
+                                    PokerDifficultyCard(difficulty: difficulty)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .frame(maxWidth: 900)
+
+                        Text("扫雷、方块和牌桌，选一个开始挑战")
+                            .font(.system(size: 16, weight: .medium, design: .rounded))
+                            .foregroundStyle(SaoleiPalette.mutedInk)
                     }
                     .frame(maxWidth: 900)
-
-                    Spacer(minLength: 0)
-
-                    Text("第一次玩可以从“小小新手”开始")
-                        .font(.system(size: 16, weight: .medium, design: .rounded))
-                        .foregroundStyle(SaoleiPalette.mutedInk)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 24)
                 }
-                .frame(maxWidth: 900, maxHeight: .infinity)
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 24)
             }
         }
         .navigationBarHidden(true)
@@ -80,9 +107,100 @@ struct ContentView: View {
                 .font(.system(size: 42, weight: .black, design: .rounded))
                 .foregroundStyle(SaoleiPalette.ink)
 
-            Text("动动脑筋，挑战扫雷和俄罗斯方块！")
+            Text("动动脑筋，挑战扫雷、俄罗斯方块和德州扑克！")
                 .font(.system(size: 18, weight: .medium, design: .rounded))
                 .foregroundStyle(SaoleiPalette.mutedInk)
+        }
+    }
+}
+
+private struct PokerEntryCard: View {
+    var body: some View {
+        HStack(spacing: 16) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(PokerPalette.felt.opacity(0.13))
+                    .frame(width: 70, height: 70)
+                Text("♠♥")
+                    .font(.system(size: 27, weight: .black, design: .rounded))
+                    .foregroundStyle(PokerPalette.felt)
+            }
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text("德州扑克")
+                    .font(.system(size: 21, weight: .black, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.ink)
+                Text("和机器人比牌，拼出最强的五张牌")
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.mutedInk)
+            }
+
+            Spacer(minLength: 0)
+
+            Image(systemName: "arrow.right.circle.fill")
+                .font(.system(size: 25, weight: .bold))
+                .foregroundStyle(PokerPalette.felt)
+        }
+        .padding(16)
+        .background(SaoleiPalette.card)
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(PokerPalette.felt.opacity(0.32), lineWidth: 2)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .shadow(color: PokerPalette.felt.opacity(0.11), radius: 12, y: 6)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("德州扑克，和机器人比牌，拼出最强的五张牌，开始游戏")
+    }
+}
+
+private struct PokerDifficultyCard: View {
+    let difficulty: PokerDifficulty
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(accentColor)
+                    .frame(width: 14, height: 14)
+                Text(difficulty.title)
+                    .font(.system(size: 20, weight: .black, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.ink)
+            }
+
+            Text(difficulty.subtitle)
+                .font(.system(size: 15, weight: .medium, design: .rounded))
+                .foregroundStyle(SaoleiPalette.mutedInk)
+
+            HStack {
+                Text("开始对战")
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                Spacer()
+                Image(systemName: "arrow.right.circle.fill")
+                    .font(.system(size: 21, weight: .bold))
+            }
+            .foregroundStyle(accentColor)
+            .padding(.top, 8)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(20)
+        .background(SaoleiPalette.card)
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(accentColor.opacity(0.28), lineWidth: 2)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .shadow(color: PokerPalette.felt.opacity(0.10), radius: 12, y: 6)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("德州扑克难度：\(difficulty.title)，\(difficulty.subtitle)，开始对战")
+    }
+
+    private var accentColor: Color {
+        switch difficulty.accent {
+        case .mint: return SaoleiPalette.mint
+        case .sky: return SaoleiPalette.sky
+        case .orange: return SaoleiPalette.orange
+        case .purple: return SaoleiPalette.purple
         }
     }
 }
