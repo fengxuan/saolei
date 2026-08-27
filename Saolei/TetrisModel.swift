@@ -95,7 +95,10 @@ enum TetrisStatus: Equatable {
 
 struct TetrisGame {
     static let rows = 20
-    static let columns = 10
+    static let defaultColumns = 10
+    static let landscapeColumns = 14
+
+    let columns: Int
 
     private(set) var board: [[TetrisPieceKind?]]
     private(set) var activePiece: TetrisPiece
@@ -105,8 +108,9 @@ struct TetrisGame {
     private(set) var clearedLines: Int
     private(set) var level: Int
 
-    init() {
-        board = Array(repeating: Array(repeating: nil, count: Self.columns), count: Self.rows)
+    init(columns: Int = Self.defaultColumns) {
+        self.columns = max(Self.defaultColumns, columns)
+        board = Array(repeating: Array(repeating: nil, count: self.columns), count: Self.rows)
         activePiece = TetrisPiece(kind: .t, rotation: 0, row: 0, column: 3)
         nextPiece = TetrisPiece(kind: .o, rotation: 0, row: 0, column: 0)
         status = .ready
@@ -121,7 +125,7 @@ struct TetrisGame {
     }
 
     mutating func reset() {
-        board = Array(repeating: Array(repeating: nil, count: Self.columns), count: Self.rows)
+        board = Array(repeating: Array(repeating: nil, count: columns), count: Self.rows)
         score = 0
         clearedLines = 0
         level = 1
@@ -192,7 +196,7 @@ struct TetrisGame {
     }
 
     func kind(at row: Int, column: Int) -> TetrisPieceKind? {
-        guard row >= 0, row < Self.rows, column >= 0, column < Self.columns else { return nil }
+        guard row >= 0, row < Self.rows, column >= 0, column < columns else { return nil }
         if let lockedKind = board[row][column] {
             return lockedKind
         }
@@ -220,7 +224,7 @@ struct TetrisGame {
         for block in piece.blocks {
             let row = piece.row + block.row
             let column = piece.column + block.column
-            guard column >= 0, column < Self.columns, row < Self.rows else { return false }
+            guard column >= 0, column < columns, row < Self.rows else { return false }
             if row >= 0, board[row][column] != nil {
                 return false
             }
@@ -232,7 +236,7 @@ struct TetrisGame {
         for block in activePiece.blocks {
             let row = activePiece.row + block.row
             let column = activePiece.column + block.column
-            guard row >= 0, row < Self.rows, column >= 0, column < Self.columns else { continue }
+            guard row >= 0, row < Self.rows, column >= 0, column < columns else { continue }
             board[row][column] = activePiece.kind
         }
 
@@ -250,7 +254,7 @@ struct TetrisGame {
             row.allSatisfy { $0 != nil }
         }
         for _ in 0..<completedCount {
-            board.insert(Array(repeating: nil, count: Self.columns), at: 0)
+            board.insert(Array(repeating: nil, count: columns), at: 0)
         }
 
         clearedLines += completedCount
@@ -273,7 +277,7 @@ struct TetrisGame {
             kind: kind,
             rotation: 0,
             row: 0,
-            column: max(0, (Self.columns - width) / 2)
+            column: max(0, (columns - width) / 2)
         )
     }
 

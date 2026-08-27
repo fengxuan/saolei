@@ -12,6 +12,12 @@ struct TetrisView: View {
 
             GeometryReader { proxy in
                 gameLayout(in: proxy)
+                    .onAppear {
+                        configureGame(for: proxy.size)
+                    }
+                    .onChange(of: proxy.size) { newSize in
+                        configureGame(for: newSize)
+                    }
             }
         }
         .navigationTitle("俄罗斯方块")
@@ -23,15 +29,29 @@ struct TetrisView: View {
 
     @ViewBuilder
     private func gameLayout(in proxy: GeometryProxy) -> some View {
-        let isLargeLayout = horizontalSizeClass == .regular || (proxy.size.width >= 700 && proxy.size.height >= 600)
+        let isIPadLayout = usesIPadLayout(for: proxy.size)
 
-        if isLargeLayout {
+        if isIPadLayout && proxy.size.width > proxy.size.height {
+            iPadLandscapeGameLayout(in: proxy)
+        } else if isIPadLayout {
             iPadGameLayout(in: proxy)
         } else if proxy.size.width > proxy.size.height {
             widePhoneGameLayout(in: proxy)
         } else {
             phoneGameLayout(in: proxy)
         }
+    }
+
+    private func usesIPadLayout(for size: CGSize) -> Bool {
+        horizontalSizeClass == .regular || (size.width >= 700 && size.height >= 600)
+    }
+
+    private func configureGame(for size: CGSize) {
+        let columns = usesIPadLayout(for: size) && size.width > size.height
+            ? TetrisGame.landscapeColumns
+            : TetrisGame.defaultColumns
+        guard game.columns != columns else { return }
+        game = TetrisGame(columns: columns)
     }
 
     private func phoneGameLayout(in proxy: GeometryProxy) -> some View {
@@ -81,6 +101,33 @@ struct TetrisView: View {
         .frame(maxWidth: .infinity)
         .padding(.horizontal, horizontalPadding)
         .padding(.vertical, 12)
+    }
+
+    private func iPadLandscapeGameLayout(in proxy: GeometryProxy) -> some View {
+        let horizontalPadding: CGFloat = proxy.size.width > 1_000 ? 28 : 18
+        let contentSpacing: CGFloat = 20
+        let contentWidth = min(proxy.size.width - horizontalPadding * 2, 1_280)
+        let sidebarWidth = min(310, max(260, contentWidth * 0.27))
+        let boardAreaWidth = contentWidth - contentSpacing - sidebarWidth
+        let boardHeight = max(260, proxy.size.height - 32)
+        let boardWidth = min(boardAreaWidth, 900)
+
+        return HStack(alignment: .top, spacing: contentSpacing) {
+            boardWithStatus(width: boardWidth, height: boardHeight)
+                .frame(maxWidth: .infinity, alignment: .top)
+
+            VStack(spacing: 14) {
+                gameHeader()
+                scoreCard()
+                controlPanel()
+                instructions()
+            }
+            .frame(width: sidebarWidth)
+        }
+        .frame(maxWidth: 1_280)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, horizontalPadding)
+        .padding(.vertical, 16)
     }
 
     private func iPadGameLayout(in proxy: GeometryProxy) -> some View {
@@ -173,22 +220,62 @@ struct TetrisView: View {
         }
     }
 
+    private func boardWithStatus(width: CGFloat, height: CGFloat, compact: Bool = false) -> some View {
+        ZStack {
+            gameBoard(width: width, height: height)
+            if game.status != .playing {
+                statusOverlay(compact: compact)
+            }
+        }
+    }
+
     private func gameBoard(side: CGFloat) -> some View {
         let horizontalSpacing: CGFloat = 2
-        let cellSide = max(12, (side - 16 - horizontalSpacing * CGFloat(TetrisGame.columns - 1)) / CGFloat(TetrisGame.columns))
+        let cellSide = max(12, (side - 16 - horizontalSpacing * CGFloat(game.columns - 1)) / CGFloat(game.columns))
 
         return LazyVGrid(
-            columns: Array(repeating: GridItem(.fixed(cellSide), spacing: horizontalSpacing), count: TetrisGame.columns),
+            columns: Array(repeating: GridItem(.fixed(cellSide), spacing: horizontalSpacing), count: game.columns),
             spacing: horizontalSpacing
         ) {
-            ForEach(0..<(TetrisGame.rows * TetrisGame.columns), id: \.self) { index in
-                let row = index / TetrisGame.columns
-                let column = index % TetrisGame.columns
+            ForEach(0..<(TetrisGame.rows * game.columns), id: \.self) { index in
+                let row = index / game.columns
+                let column = index % game.columns
                 TetrisBoardCell(kind: game.kind(at: row, column: column), side: cellSide)
             }
         }
         .padding(8)
         .frame(width: side, height: side * 2)
+        .background(SaoleiPalette.blueDeep.opacity(0.94))
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .shadow(color: SaoleiPalette.blueDeep.opacity(0.25), radius: 15, y: 9)
+        .contentShape(Rectangle())
+        .gesture(boardGesture)
+        .onTapGesture {
+            guard game.isPlaying else { return }
+            game.rotate()
+            fireImpact()
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("俄罗斯方块游戏棋盘")
+    }
+
+    private func gameBoard(width: CGFloat, height: CGFloat) -> some View {
+        let spacing: CGFloat = 2
+        let cellWidth = max(12, (width - 16 - spacing * CGFloat(game.columns - 1)) / CGFloat(game.columns))
+        let cellHeight = max(12, (height - 16 - spacing * CGFloat(TetrisGame.rows - 1)) / CGFloat(TetrisGame.rows))
+
+        return LazyVGrid(
+            columns: Array(repeating: GridItem(.fixed(cellWidth), spacing: spacing), count: game.columns),
+            spacing: spacing
+        ) {
+            ForEach(0..<(TetrisGame.rows * game.columns), id: \.self) { index in
+                let row = index / game.columns
+                let column = index % game.columns
+                TetrisBoardCell(kind: game.kind(at: row, column: column), width: cellWidth, height: cellHeight)
+            }
+        }
+        .padding(8)
+        .frame(width: width, height: height)
         .background(SaoleiPalette.blueDeep.opacity(0.94))
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         .shadow(color: SaoleiPalette.blueDeep.opacity(0.25), radius: 15, y: 9)
@@ -352,7 +439,20 @@ struct TetrisView: View {
 
 private struct TetrisBoardCell: View {
     let kind: TetrisPieceKind?
-    let side: CGFloat
+    let width: CGFloat
+    let height: CGFloat
+
+    init(kind: TetrisPieceKind?, side: CGFloat) {
+        self.kind = kind
+        width = side
+        height = side
+    }
+
+    init(kind: TetrisPieceKind?, width: CGFloat, height: CGFloat) {
+        self.kind = kind
+        self.width = width
+        self.height = height
+    }
 
     var body: some View {
         RoundedRectangle(cornerRadius: max(3, side * 0.16), style: .continuous)
@@ -365,12 +465,14 @@ private struct TetrisBoardCell: View {
                 if kind != nil {
                     RoundedRectangle(cornerRadius: max(3, side * 0.16), style: .continuous)
                         .fill(.white.opacity(0.16))
-                        .padding(side * 0.16)
+                        .padding(min(width, height) * 0.16)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 }
             }
-            .frame(width: side, height: side)
+            .frame(width: width, height: height)
     }
+
+    private var side: CGFloat { min(width, height) }
 
     private var fillColor: Color {
         guard let kind = kind else { return .white.opacity(0.07) }
