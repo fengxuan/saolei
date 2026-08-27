@@ -16,11 +16,13 @@ struct PokerView: View {
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var game: PokerGame
-    @State private var selectedBet = 40
+    @State private var selectedBet: Int
 
     init(difficulty: PokerDifficulty) {
+        let initialGame = PokerGame(difficulty: difficulty)
         self.difficulty = difficulty
-        _game = State(initialValue: PokerGame(difficulty: difficulty))
+        _game = State(initialValue: initialGame)
+        _selectedBet = State(initialValue: initialGame.halfPotBet ?? initialGame.minimumBet)
     }
 
     var body: some View {
@@ -39,6 +41,7 @@ struct PokerView: View {
                             gameHeader
                             scoreCard
                             pokerTable
+                            pokerKnowledgeTip(isCompact: false)
                             actionPanel
                             rulesCard
                         }
@@ -76,8 +79,13 @@ struct PokerView: View {
             }
 
             HStack(alignment: .top, spacing: 14) {
-                pokerTable(isLandscape: true, fillsAvailableHeight: true)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                VStack(spacing: 8) {
+                    pokerTable(isLandscape: true, fillsAvailableHeight: true)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                    pokerKnowledgeTip(isCompact: true)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
 
                 actionPanel(isCompact: true)
                     .frame(width: actionWidth, alignment: .top)
@@ -101,6 +109,8 @@ struct PokerView: View {
 
             pokerTable(isLandscape: false, fillsAvailableHeight: true)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            pokerKnowledgeTip(isCompact: false)
 
             actionPanel(isCompact: false)
         }
@@ -232,6 +242,9 @@ struct PokerView: View {
                 HStack {
                     tablePlayerLabel(name: "你", icon: "person.fill", tint: PokerPalette.gold)
                     Spacer()
+                    if game.isPlayerTurn, let equity = game.playerEquity {
+                        PokerEquityBadge(equity: equity)
+                    }
                     Text("小盲 \(PokerGame.smallBlind) · 大盲 \(PokerGame.bigBlind)")
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white.opacity(0.66))
@@ -266,6 +279,45 @@ struct PokerView: View {
 
     private func actionPanel(isCompact: Bool) -> some View {
         VStack(spacing: isCompact ? 8 : 12) {
+            actionStatusArea(isCompact: isCompact)
+
+            Text(game.message)
+                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                .foregroundStyle(PokerPalette.mutedInk)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(height: isCompact ? 38 : 42, alignment: .leading)
+                .lineLimit(2)
+
+            if game.isPlayerTurn {
+                if horizontalSizeClass == .regular {
+                    iPadActionControls(isCompact: isCompact)
+                } else {
+                    phoneActionControls
+                }
+            } else {
+                resultActionControls(isCompact: isCompact)
+            }
+        }
+        .padding(isCompact ? 12 : 16)
+        .background(SaoleiPalette.card)
+        .clipShape(RoundedRectangle(cornerRadius: 21, style: .continuous))
+        .shadow(color: PokerPalette.feltDeep.opacity(0.10), radius: 12, y: 6)
+    }
+
+    private func pokerKnowledgeTip(isCompact: Bool) -> some View {
+        (Text(Image(systemName: "lightbulb.fill")) + Text("  \(game.knowledgeTip)"))
+        .font(.system(size: isCompact ? 13 : 15, weight: .bold, design: .rounded))
+        .foregroundStyle(SaoleiPalette.mint)
+        .multilineTextAlignment(.center)
+        .lineLimit(2)
+        .minimumScaleFactor(0.72)
+        .frame(maxWidth: .infinity, minHeight: isCompact ? 34 : 38, maxHeight: isCompact ? 34 : 38, alignment: .center)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(game.knowledgeTip)
+    }
+
+    private func actionStatusArea(isCompact: Bool) -> some View {
+        VStack(spacing: isCompact ? 8 : 10) {
             HStack(alignment: .center) {
                 Label(game.isPlayerTurn ? "轮到你行动" : resultTitle, systemImage: game.isPlayerTurn ? "hand.tap.fill" : "flag.checkered")
                     .font(.system(size: 18, weight: .black, design: .rounded))
@@ -280,106 +332,176 @@ struct PokerView: View {
 
             if let botAction = game.botAction {
                 PokerBotActionBanner(action: botAction)
-            }
-
-            Text(game.message)
-                .font(.system(size: 15, weight: .semibold, design: .rounded))
-                .foregroundStyle(PokerPalette.mutedInk)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true)
-
-            if game.isPlayerTurn {
-                if isCompact {
-                    VStack(spacing: 8) {
-                        actionButton(title: "弃牌", systemName: "xmark", tint: PokerPalette.red, compact: true) {
-                            game.playerFold()
-                            fireImpact()
-                        }
-                        actionButton(title: game.callTitle, systemName: game.callAmount == 0 ? "hand.wave.fill" : "arrow.right", tint: SaoleiPalette.blueDeep, compact: true) {
-                            game.playerCheckOrCall()
-                            syncBetSelection()
-                            fireImpact()
-                        }
-                        betMenu(isCompact: true)
-                        actionButton(title: game.currentBet == 0 ? "下注" : "加注", systemName: "arrow.up", tint: PokerPalette.felt, compact: true) {
-                            game.placePlayerBet(to: selectedBetAmount)
-                            syncBetSelection()
-                            fireImpact()
-                        }
-                    }
-                } else {
-                    HStack(spacing: 10) {
-                        actionButton(title: "弃牌", systemName: "xmark", tint: PokerPalette.red) {
-                            game.playerFold()
-                            fireImpact()
-                        }
-                        actionButton(title: game.callTitle, systemName: game.callAmount == 0 ? "hand.wave.fill" : "arrow.right", tint: SaoleiPalette.blueDeep) {
-                            game.playerCheckOrCall()
-                            syncBetSelection()
-                            fireImpact()
-                        }
-                    }
-
-                    HStack(spacing: 10) {
-                        betMenu(isCompact: false)
-                        actionButton(title: game.currentBet == 0 ? "下注" : "加注", systemName: "arrow.up", tint: PokerPalette.felt) {
-                            game.placePlayerBet(to: selectedBetAmount)
-                            syncBetSelection()
-                            fireImpact()
-                        }
-                    }
-                }
+                    .frame(height: isCompact ? 52 : 58)
             } else {
-                VStack(spacing: 10) {
-                    Text(game.status.isMatchOver ? "比赛结束" : "本局底池：\(game.lastPot)")
-                        .font(.system(size: 15, weight: .bold, design: .rounded))
-                        .foregroundStyle(PokerPalette.mutedInk)
-
-                    Button {
-                        if game.status.isMatchOver {
-                            game.resetMatch()
-                        } else {
-                            game.startNewHand()
-                        }
-                        syncBetSelection()
-                        fireImpact()
-                    } label: {
-                        Label(game.status.isMatchOver ? "重新开始比赛" : "再来一局", systemImage: "arrow.clockwise")
-                            .font(.system(size: 16, weight: .black, design: .rounded))
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, isCompact ? 9 : 13)
-                            .background(resultTint)
-                            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
-                }
+                Color.clear
+                    .frame(height: isCompact ? 52 : 58)
+                    .accessibilityHidden(true)
             }
         }
-        .padding(isCompact ? 12 : 16)
-        .background(SaoleiPalette.card)
-        .clipShape(RoundedRectangle(cornerRadius: 21, style: .continuous))
-        .shadow(color: PokerPalette.feltDeep.opacity(0.10), radius: 12, y: 6)
+        .frame(maxWidth: .infinity)
+        .frame(height: isCompact ? 86 : 96, alignment: .top)
     }
 
-    private func betMenu(isCompact: Bool) -> some View {
-        Menu {
-            ForEach(game.betOptions, id: \.self) { amount in
-                Button("到 \(amount)") {
-                    selectedBet = amount
+    private func iPadActionControls(isCompact: Bool) -> some View {
+        VStack(spacing: isCompact ? 8 : 10) {
+            actionButton(
+                title: game.callTitle,
+                systemName: game.callAmount == 0 ? "hand.wave.fill" : "arrow.right",
+                tint: SaoleiPalette.blueDeep,
+                compact: isCompact
+            ) {
+                game.playerCheckOrCall()
+                syncBetSelection()
+                fireImpact()
+            }
+
+            iPadBetPresetRow(isCompact: isCompact)
+
+            actionButton(
+                title: game.currentBet == 0 ? "下注到 \(selectedBetAmount)" : "加注到 \(selectedBetAmount)",
+                systemName: "arrow.up",
+                tint: PokerPalette.felt,
+                compact: isCompact
+            ) {
+                game.placePlayerBet(to: selectedBetAmount)
+                syncBetSelection()
+                fireImpact()
+            }
+            .disabled(game.betOptions.isEmpty)
+
+            actionButton(title: "弃牌", systemName: "xmark", tint: PokerPalette.red, compact: isCompact) {
+                game.playerFold()
+                fireImpact()
+            }
+        }
+    }
+
+    private func resultActionControls(isCompact: Bool) -> some View {
+        VStack(spacing: isCompact ? 8 : 10) {
+            actionButton(
+                title: game.status.isMatchOver ? "重新开始比赛" : "再来一局",
+                systemName: "arrow.clockwise",
+                tint: resultTint,
+                compact: isCompact
+            ) {
+                if game.status.isMatchOver {
+                    game.resetMatch()
+                } else {
+                    game.startNewHand()
+                }
+                syncBetSelection(resetToDefault: true)
+                fireImpact()
+            }
+
+            Text(game.status.isMatchOver ? "比赛结束" : "本局底池：\(game.lastPot)")
+                .font(.system(size: 15, weight: .bold, design: .rounded))
+                .foregroundStyle(PokerPalette.mutedInk)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(height: isCompact ? 24 : 26, alignment: .leading)
+        }
+    }
+
+    private var phoneActionControls: some View {
+        VStack(spacing: 10) {
+            actionButton(title: game.callTitle, systemName: game.callAmount == 0 ? "hand.wave.fill" : "arrow.right", tint: SaoleiPalette.blueDeep) {
+                game.playerCheckOrCall()
+                syncBetSelection()
+                fireImpact()
+            }
+
+            HStack(spacing: 10) {
+                betIncrementButton(isCompact: false)
+                actionButton(title: game.currentBet == 0 ? "下注" : "加注", systemName: "arrow.up", tint: PokerPalette.felt) {
+                    game.placePlayerBet(to: selectedBetAmount)
+                    syncBetSelection()
+                    fireImpact()
                 }
             }
-        } label: {
-            Label("到 \(selectedBetAmount)", systemImage: "slider.horizontal.3")
-                .font(.system(size: 15, weight: .bold, design: .rounded))
-                .foregroundStyle(PokerPalette.feltDeep)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, isCompact ? 9 : 13)
-                .background(PokerPalette.gold.opacity(0.24))
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+
+            actionButton(title: "弃牌", systemName: "xmark", tint: PokerPalette.red) {
+                game.playerFold()
+                fireImpact()
+            }
         }
-        .disabled(game.betOptions.isEmpty)
-        .opacity(game.betOptions.isEmpty ? 0.5 : 1)
+    }
+
+    private func iPadBetPresetRow(isCompact: Bool) -> some View {
+        HStack(spacing: 6) {
+            potPresetButton(title: "半底池", amount: game.halfPotBet, compact: isCompact)
+            potPresetButton(title: "1倍底池", amount: game.fullPotBet, compact: isCompact)
+            betIncrementButton(isCompact: isCompact)
+        }
+    }
+
+    private func potPresetButton(title: String, amount: Int?, compact: Bool) -> some View {
+        Button {
+            guard let amount else { return }
+            selectedBet = amount
+        } label: {
+            VStack(spacing: 1) {
+                Text(title)
+                    .font(.system(size: compact ? 11 : 12, weight: .bold, design: .rounded))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+                Text(amount.map { String($0) } ?? "—")
+                    .font(.system(size: compact ? 14 : 15, weight: .black, design: .rounded))
+                    .monospacedDigit()
+            }
+            .foregroundStyle(PokerPalette.feltDeep)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, compact ? 6 : 8)
+            .background((amount == selectedBet ? PokerPalette.gold.opacity(0.36) : PokerPalette.gold.opacity(0.20)))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .disabled(amount == nil)
+        .opacity(amount == nil ? 0.45 : 1)
+    }
+
+    private func betIncrementButton(isCompact: Bool) -> some View {
+        let nextAmount = nextIncrementalBetAmount
+        let isUnavailable = game.betOptions.isEmpty
+        let isAllIn = !isUnavailable && nextAmount == nil
+
+        return Button {
+            guard let nextAmount else { return }
+            selectedBet = nextAmount
+        } label: {
+            VStack(spacing: 1) {
+                Text(isUnavailable ? "不可加注" : (isAllIn ? "All in" : "+1倍底池"))
+                    .font(.system(size: isCompact ? 11 : 12, weight: .bold, design: .rounded))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.72)
+                Text(nextAmount.map(String.init) ?? (isAllIn ? String(selectedBetAmount) : "—"))
+                    .font(.system(size: isCompact ? 14 : 15, weight: .black, design: .rounded))
+                    .monospacedDigit()
+            }
+            .foregroundStyle(PokerPalette.feltDeep)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, isCompact ? 6 : 8)
+            .background(PokerPalette.gold.opacity(isAllIn ? 0.42 : 0.24))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .disabled(isUnavailable || isAllIn)
+        .opacity(isUnavailable ? 0.5 : 1)
+        .accessibilityLabel(
+            isUnavailable
+                ? "当前没有可用加注"
+                : (isAllIn ? "已选择 All in，金额 \(selectedBetAmount)" : "增加一倍底池，选择到 \(nextAmount ?? 0)")
+        )
+    }
+
+    private var nextIncrementalBetAmount: Int? {
+        guard let maximum = game.betOptions.last,
+              selectedBetAmount < maximum else {
+            return nil
+        }
+
+        let increment = max(PokerGame.bigBlind, game.pot)
+        let desiredAmount = selectedBetAmount + increment
+        return game.betOptions.first(where: { $0 >= desiredAmount }) ?? maximum
     }
 
     private func actionButton(title: String, systemName: String, tint: Color, compact: Bool = false, action: @escaping () -> Void) -> some View {
@@ -408,9 +530,9 @@ struct PokerView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(15)
-        .background(PokerPalette.gold.opacity(0.13))
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .padding(15)
+            .background(PokerPalette.gold.opacity(0.13))
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     private var selectedBetAmount: Int {
@@ -445,8 +567,12 @@ struct PokerView: View {
         }
     }
 
-    private func syncBetSelection() {
-        if let firstOption = game.betOptions.first, !game.betOptions.contains(selectedBet) {
+    private func syncBetSelection(resetToDefault: Bool = false) {
+        guard !game.betOptions.isEmpty else { return }
+
+        if resetToDefault {
+            selectedBet = game.halfPotBet ?? game.betOptions.first ?? game.minimumBet
+        } else if let firstOption = game.betOptions.first, !game.betOptions.contains(selectedBet) {
             selectedBet = firstOption
         }
     }
@@ -465,6 +591,33 @@ struct PokerView: View {
         }
 
         return 390
+    }
+}
+
+private struct PokerEquityBadge: View {
+    let equity: PokerEquity
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "chart.line.uptrend.xyaxis")
+                .font(.system(size: 10, weight: .black))
+            Text("估算赢面 \(percentage(equity.potShare))%")
+                .font(.system(size: 11, weight: .black, design: .rounded))
+                .monospacedDigit()
+        }
+        .foregroundStyle(PokerPalette.feltDeep)
+        .padding(.horizontal, 7)
+        .padding(.vertical, 4)
+        .background(PokerPalette.gold.opacity(0.82))
+        .clipShape(Capsule())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(
+            "估算赢面 \(percentage(equity.potShare))%，胜率 \(percentage(equity.winRate))%，平局率 \(percentage(equity.tieRate))%，基于随机模拟，仅供教学参考"
+        )
+    }
+
+    private func percentage(_ value: Double) -> Int {
+        min(100, max(0, Int((value * 100).rounded())))
     }
 }
 

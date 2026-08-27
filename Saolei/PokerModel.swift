@@ -138,6 +138,16 @@ struct PokerHand: Equatable {
     var title: String { category.title }
 }
 
+struct PokerEquity: Equatable {
+    let winRate: Double
+    let tieRate: Double
+
+    /// 平局时双方各分一半底池，因此用于教学展示的综合赢面。
+    var potShare: Double {
+        min(1, max(0, winRate + tieRate * 0.5))
+    }
+}
+
 enum PokerWinner: Equatable {
     case player
     case bot
@@ -334,6 +344,14 @@ struct PokerGame {
     static let startingStack = 1_000
     static let smallBlind = 10
     static let bigBlind = 20
+    static let knowledgeTips = [
+        "翻牌前起手牌越强，越值得主动加注；还要结合对手行动判断。",
+        "底池赔率能帮助你判断跟注是否划算：需要的胜率越低，跟注越容易成立。",
+        "同花听牌通常有 9 张补牌，但这些补牌不一定都是绝对安全的。",
+        "公共牌越连贯、越同花，越要留意对手可能已经组成顺子或同花。",
+        "下注前先想清楚目的：是希望更差的牌跟注，还是希望更好的牌弃牌。",
+        "不要只看自己的牌；下注大小和对手的行动同样能提供重要信息。"
+    ]
 
     private(set) var difficulty: PokerDifficulty
     private(set) var playerChips = startingStack
@@ -350,8 +368,10 @@ struct PokerGame {
     private(set) var communityCards: [PlayingCard] = []
     private(set) var status: PokerStatus = .playerTurn
     private(set) var message = ""
+    private(set) var knowledgeTip = ""
     private(set) var botAction: PokerBotAction? = nil
     private(set) var currentBet = bigBlind
+    private(set) var playerEquity: PokerEquity? = nil
 
     private var deck: [PlayingCard] = []
     private var playerBetThisStreet = smallBlind
@@ -401,6 +421,14 @@ struct PokerGame {
         return options
     }
 
+    var halfPotBet: Int? {
+        potSizedBet(multiplier: 0.5)
+    }
+
+    var fullPotBet: Int? {
+        potSizedBet(multiplier: 1.0)
+    }
+
     mutating func placePlayerBet(to total: Int) {
         guard isPlayerTurn else { return }
 
@@ -436,15 +464,18 @@ struct PokerGame {
     mutating func playerFold() {
         guard isPlayerTurn else { return }
         botAction = nil
-        message = "你弃牌了，机器人赢下本局"
+        message = "你弃牌了：主动放弃本局，机器人获胜"
         finishHand(winner: .bot)
     }
 
     mutating func startNewHand() {
         guard playerChips >= PokerGame.smallBlind, botChips >= PokerGame.bigBlind else {
+            playerEquity = nil
             let winner: PokerWinner = playerChips < PokerGame.smallBlind ? .bot : .player
             status = .matchOver(winner)
-            message = winner == .player ? "机器人筹码不足，比赛获胜！" : "你的筹码不足，比赛结束"
+            message = winner == .player
+                ? "比赛结束：机器人筹码不足，你获胜"
+                : "比赛结束：你的筹码不足，机器人获胜"
             return
         }
 
@@ -466,6 +497,10 @@ struct PokerGame {
         status = .playerTurn
         botAction = nil
         message = "你是小盲，轮到你行动"
+        let availableTips = PokerGame.knowledgeTips.filter { $0 != knowledgeTip }
+        knowledgeTip = (availableTips.isEmpty ? PokerGame.knowledgeTips : availableTips).randomElement()
+            ?? "先看牌型，再结合底池和对手行动做决定。"
+        updatePlayerEquity()
     }
 
     mutating func resetMatch() {
@@ -513,7 +548,7 @@ struct PokerGame {
 
         if facingBet, shouldFold, randomValue < foldProbability {
             botAction = .fold
-            message = "机器人弃牌了，你赢下本局"
+            message = "机器人弃牌了：你无需比牌即可获胜"
             finishHand(winner: .player)
             return
         }
@@ -553,6 +588,14 @@ struct PokerGame {
         } else {
             settleStreet()
         }
+    }
+
+    private func potSizedBet(multiplier: Double) -> Int? {
+        guard let maximum = betOptions.last else { return nil }
+
+        let potAmount = max(PokerGame.bigBlind, Int((Double(max(1, pot)) * multiplier).rounded()))
+        let target = currentBet + potAmount
+        return betOptions.first(where: { $0 >= target }) ?? maximum
     }
 
     private mutating func settleStreet() {
@@ -600,6 +643,7 @@ struct PokerGame {
         raisesThisStreet = 0
         status = .playerTurn
         self.message = message
+        updatePlayerEquity()
     }
 
     private mutating func runOutAndShowdown() {
@@ -615,14 +659,32 @@ struct PokerGame {
         let comparison = compareHands(playerHand, botHand)
         let winner: PokerWinner = comparison > 0 ? .player : comparison < 0 ? .bot : .tie
 
-        message = "你是\(playerHand.title)，机器人是\(botHand.title)"
+        message = showdownMessage(playerHand: playerHand, botHand: botHand, winner: winner)
         finishHand(winner: winner)
+    }
+
+    private func showdownMessage(playerHand: PokerHand, botHand: PokerHand, winner: PokerWinner) -> String {
+        switch winner {
+        case .player:
+            if playerHand.category == botHand.category {
+                return "你赢了：双方都是\(playerHand.title)，你的关键牌更大"
+            }
+            return "你赢了：你的\(playerHand.title)大于机器人的\(botHand.title)"
+        case .bot:
+            if playerHand.category == botHand.category {
+                return "你输了：双方都是\(playerHand.title)，机器人的关键牌更大"
+            }
+            return "你输了：机器人的\(botHand.title)大于你的\(playerHand.title)"
+        case .tie:
+            return "平局：双方都是\(playerHand.title)，牌型和关键牌相同"
+        }
     }
 
     private mutating func finishHand(winner: PokerWinner) {
         let awardedPot = pot
         lastPot = awardedPot
         pot = 0
+        playerEquity = nil
 
         switch winner {
         case .player:
@@ -726,6 +788,62 @@ struct PokerGame {
         }
 
         return equity / Double(simulations)
+    }
+
+    private mutating func updatePlayerEquity() {
+        playerEquity = equity(
+            for: playerCards,
+            communityCards: communityCards,
+            simulations: 240
+        )
+    }
+
+    private func equity(
+        for heroCards: [PlayingCard],
+        communityCards: [PlayingCard],
+        simulations: Int
+    ) -> PokerEquity? {
+        guard heroCards.count == 2,
+              communityCards.count <= 5,
+              simulations > 0 else {
+            return nil
+        }
+
+        let knownCards = Set(heroCards + communityCards)
+        let unseenCards = PokerGame.makeDeck().filter { !knownCards.contains($0) }
+        let cardsToCome = 5 - communityCards.count
+        guard unseenCards.count >= 2 + cardsToCome else { return nil }
+
+        var wins = 0
+        var ties = 0
+        var completedSimulations = 0
+
+        for _ in 0..<simulations {
+            var sample = unseenCards.shuffled()
+            let opponentCards = [sample.removeLast(), sample.removeLast()]
+            let futureCards = (0..<cardsToCome).map { _ in sample.removeLast() }
+            let completedCommunity = communityCards + futureCards
+
+            guard let heroHand = PokerHandEvaluator.bestHand(from: heroCards + completedCommunity),
+                  let opponentHand = PokerHandEvaluator.bestHand(from: opponentCards + completedCommunity) else {
+                continue
+            }
+
+            completedSimulations += 1
+            let comparison = compareHands(heroHand, opponentHand)
+            if comparison > 0 {
+                wins += 1
+            } else if comparison == 0 {
+                ties += 1
+            }
+        }
+
+        guard completedSimulations > 0 else { return nil }
+        let total = Double(completedSimulations)
+        return PokerEquity(
+            winRate: Double(wins) / total,
+            tieRate: Double(ties) / total
+        )
     }
 
     private func botRaiseTarget(strength: Double) -> Int? {
