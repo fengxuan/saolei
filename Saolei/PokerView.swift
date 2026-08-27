@@ -100,19 +100,28 @@ struct PokerView: View {
 
     private func iPadPortraitLayout(size: CGSize) -> some View {
         let horizontalPadding = min(28, max(18, size.width * 0.035))
+        let usesHeaderRow = size.width >= 700
 
         return VStack(spacing: 10) {
-            VStack(spacing: 8) {
-                gameHeader
-                scoreCard
+            if usesHeaderRow {
+                HStack(alignment: .center, spacing: 12) {
+                    gameHeader
+                    scoreCard
+                        .frame(width: min(360, size.width * 0.46))
+                }
+            } else {
+                VStack(spacing: 8) {
+                    gameHeader
+                    scoreCard
+                }
             }
 
             pokerTable(isLandscape: false, fillsAvailableHeight: true)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            pokerKnowledgeTip(isCompact: false)
+            pokerKnowledgeTip(isCompact: true)
 
-            actionPanel(isCompact: false)
+            actionPanel(isCompact: true, usesHorizontalActions: usesHeaderRow)
         }
         .frame(maxWidth: 820, maxHeight: .infinity, alignment: .top)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -277,7 +286,7 @@ struct PokerView: View {
         actionPanel(isCompact: false)
     }
 
-    private func actionPanel(isCompact: Bool) -> some View {
+    private func actionPanel(isCompact: Bool, usesHorizontalActions: Bool = false) -> some View {
         VStack(spacing: isCompact ? 8 : 12) {
             actionStatusArea(isCompact: isCompact)
 
@@ -290,7 +299,7 @@ struct PokerView: View {
 
             if game.isPlayerTurn {
                 if horizontalSizeClass == .regular {
-                    iPadActionControls(isCompact: isCompact)
+                    iPadActionControls(isCompact: isCompact, usesHorizontalActions: usesHorizontalActions)
                 } else {
                     phoneActionControls
                 }
@@ -343,37 +352,56 @@ struct PokerView: View {
         .frame(height: isCompact ? 86 : 96, alignment: .top)
     }
 
-    private func iPadActionControls(isCompact: Bool) -> some View {
+    private func iPadActionControls(isCompact: Bool, usesHorizontalActions: Bool) -> some View {
         VStack(spacing: isCompact ? 8 : 10) {
-            actionButton(
-                title: game.callTitle,
-                systemName: game.callAmount == 0 ? "hand.wave.fill" : "arrow.right",
-                tint: SaoleiPalette.blueDeep,
-                compact: isCompact
-            ) {
-                game.playerCheckOrCall()
-                syncBetSelection()
-                fireImpact()
-            }
+            if usesHorizontalActions {
+                HStack(spacing: 8) {
+                    iPadCallButton(isCompact: isCompact)
+                    iPadRaiseButton(isCompact: isCompact)
+                    iPadFoldButton(isCompact: isCompact)
+                }
 
-            iPadBetPresetRow(isCompact: isCompact)
-
-            actionButton(
-                title: game.currentBet == 0 ? "下注到 \(selectedBetAmount)" : "加注到 \(selectedBetAmount)",
-                systemName: "arrow.up",
-                tint: PokerPalette.felt,
-                compact: isCompact
-            ) {
-                game.placePlayerBet(to: selectedBetAmount)
-                syncBetSelection()
-                fireImpact()
+                iPadBetPresetRow(isCompact: isCompact)
+            } else {
+                iPadCallButton(isCompact: isCompact)
+                iPadBetPresetRow(isCompact: isCompact)
+                iPadRaiseButton(isCompact: isCompact)
+                iPadFoldButton(isCompact: isCompact)
             }
-            .disabled(game.betOptions.isEmpty)
+        }
+    }
 
-            actionButton(title: "弃牌", systemName: "xmark", tint: PokerPalette.red, compact: isCompact) {
-                game.playerFold()
-                fireImpact()
-            }
+    private func iPadCallButton(isCompact: Bool) -> some View {
+        actionButton(
+            title: game.callTitle,
+            systemName: game.callAmount == 0 ? "hand.wave.fill" : "arrow.right",
+            tint: SaoleiPalette.blueDeep,
+            compact: isCompact
+        ) {
+            game.playerCheckOrCall()
+            syncBetSelection()
+            fireImpact()
+        }
+    }
+
+    private func iPadRaiseButton(isCompact: Bool) -> some View {
+        actionButton(
+            title: game.currentBet == 0 ? "下注到 \(selectedBetAmount)" : "加注到 \(selectedBetAmount)",
+            systemName: "arrow.up",
+            tint: PokerPalette.felt,
+            compact: isCompact
+        ) {
+            game.placePlayerBet(to: selectedBetAmount)
+            syncBetSelection()
+            fireImpact()
+        }
+        .disabled(game.betOptions.isEmpty)
+    }
+
+    private func iPadFoldButton(isCompact: Bool) -> some View {
+        actionButton(title: "弃牌", systemName: "xmark", tint: PokerPalette.red, compact: isCompact) {
+            game.playerFold()
+            fireImpact()
         }
     }
 
