@@ -3,6 +3,7 @@ import UIKit
 
 struct TetrisView: View {
     @State private var game = TetrisGame()
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     private let timer = Timer.publish(every: 0.55, on: .main, in: .common).autoconnect()
 
     var body: some View {
@@ -20,47 +21,105 @@ struct TetrisView: View {
         }
     }
 
+    @ViewBuilder
     private func gameLayout(in proxy: GeometryProxy) -> some View {
-        let boardSide = min(
-            420,
-            proxy.size.width - 40,
-            max(250, (proxy.size.height - 320) / 2)
-        )
+        let isLargeLayout = horizontalSizeClass == .regular || (proxy.size.width >= 700 && proxy.size.height >= 600)
 
-        return ScrollView {
-            VStack(spacing: 14) {
-                gameHeader
-                scoreCard
-
-                ZStack {
-                    gameBoard(side: boardSide)
-                    if game.status != .playing {
-                        statusOverlay
-                    }
-                }
-
-                controlPanel
-
-                Text("左右拖动调整位置 · 向上拖动直接落下 · 点击旋转")
-                    .font(.system(size: 14, weight: .medium, design: .rounded))
-                    .foregroundStyle(SaoleiPalette.mutedInk)
-                    .multilineTextAlignment(.center)
-            }
-            .frame(maxWidth: 520)
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
+        if isLargeLayout {
+            iPadGameLayout(in: proxy)
+        } else if proxy.size.width > proxy.size.height {
+            widePhoneGameLayout(in: proxy)
+        } else {
+            phoneGameLayout(in: proxy)
         }
     }
 
-    private var gameHeader: some View {
+    private func phoneGameLayout(in proxy: GeometryProxy) -> some View {
+        let isCompact = proxy.size.height < 700
+        let horizontalPadding: CGFloat = isCompact ? 12 : 20
+        let verticalPadding: CGFloat = isCompact ? 6 : 10
+        let spacing: CGFloat = isCompact ? 8 : 10
+        let boardReservation: CGFloat = isCompact ? 254 : 318
+        let availableWidth = max(140, proxy.size.width - horizontalPadding * 2)
+        let availableHeight = max(140, (proxy.size.height - boardReservation) / 2)
+        let boardSide = min(420, availableWidth, availableHeight)
+
+        return VStack(spacing: spacing) {
+            gameHeader(compact: isCompact)
+            scoreCard(compact: isCompact)
+            boardWithStatus(side: boardSide, compact: isCompact)
+            controlPanel(compact: isCompact)
+            instructions(compact: isCompact)
+        }
+        .frame(maxWidth: 520)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, horizontalPadding)
+        .padding(.vertical, verticalPadding)
+    }
+
+    private func widePhoneGameLayout(in proxy: GeometryProxy) -> some View {
+        let horizontalPadding: CGFloat = 12
+        let contentSpacing: CGFloat = 12
+        let sidebarWidth = min(250, max(220, proxy.size.width * 0.32))
+        let boardWidth = proxy.size.width - horizontalPadding * 2 - contentSpacing - sidebarWidth
+        let boardHeight = max(140, (proxy.size.height - 24) / 2)
+        let boardSide = min(260, boardWidth, boardHeight)
+
+        return HStack(alignment: .top, spacing: contentSpacing) {
+            boardWithStatus(side: boardSide, compact: true)
+                .frame(maxWidth: .infinity, alignment: .top)
+
+            VStack(spacing: 8) {
+                gameHeader(compact: true)
+                scoreCard(compact: true)
+                controlPanel(compact: true)
+                instructions(compact: true)
+            }
+            .frame(width: sidebarWidth)
+        }
+        .frame(maxWidth: 760)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, horizontalPadding)
+        .padding(.vertical, 12)
+    }
+
+    private func iPadGameLayout(in proxy: GeometryProxy) -> some View {
+        let horizontalPadding: CGFloat = proxy.size.width > 1_000 ? 32 : 20
+        let contentSpacing: CGFloat = 24
+        let sidebarWidth = min(340, max(250, proxy.size.width * 0.32))
+        let boardWidth = proxy.size.width - horizontalPadding * 2 - contentSpacing - sidebarWidth
+        let boardHeight = max(200, (proxy.size.height - 128) / 2)
+        let boardSide = min(420, boardWidth, boardHeight)
+
+        return VStack(spacing: 18) {
+            gameHeader()
+
+            HStack(alignment: .top, spacing: contentSpacing) {
+                boardWithStatus(side: boardSide)
+                    .frame(maxWidth: .infinity, alignment: .top)
+
+                VStack(spacing: 16) {
+                    scoreCard()
+                    controlPanel()
+                    instructions()
+                }
+                .frame(width: sidebarWidth)
+            }
+        }
+        .frame(maxWidth: 1_180)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, horizontalPadding)
+        .padding(.vertical, 16)
+    }
+
+    private func gameHeader(compact: Bool = false) -> some View {
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
                 Text("小小拼图屋")
-                    .font(.system(size: 24, weight: .black, design: .rounded))
+                    .font(.system(size: compact ? 21 : 24, weight: .black, design: .rounded))
                     .foregroundStyle(SaoleiPalette.ink)
                 Text("拼满一行，方块就会消失！")
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .font(.system(size: compact ? 12 : 14, weight: .semibold, design: .rounded))
                     .foregroundStyle(SaoleiPalette.mutedInk)
             }
 
@@ -71,9 +130,9 @@ struct TetrisView: View {
                 fireImpact()
             } label: {
                 Image(systemName: "arrow.clockwise")
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.system(size: compact ? 16 : 18, weight: .bold))
                     .foregroundStyle(SaoleiPalette.blueDeep)
-                    .frame(width: 42, height: 42)
+                    .frame(width: compact ? 36 : 42, height: compact ? 36 : 42)
                     .background(SaoleiPalette.card)
                     .clipShape(Circle())
                     .shadow(color: SaoleiPalette.blue.opacity(0.12), radius: 8, y: 4)
@@ -82,27 +141,36 @@ struct TetrisView: View {
         }
     }
 
-    private var scoreCard: some View {
+    private func scoreCard(compact: Bool = false) -> some View {
         HStack(spacing: 0) {
             StatView(title: "分数", value: String(game.score), symbol: "star.fill", tint: SaoleiPalette.orange)
             Divider()
-                .frame(height: 40)
+                .frame(height: compact ? 34 : 40)
             StatView(title: "消除行数", value: String(game.clearedLines), symbol: "square.grid.3x3.fill", tint: SaoleiPalette.mint)
             Divider()
-                .frame(height: 40)
+                .frame(height: compact ? 34 : 40)
             VStack(spacing: 4) {
                 Text("下一个")
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
                     .foregroundStyle(SaoleiPalette.mutedInk)
-                MiniTetrisPieceView(piece: game.nextPiece)
+                MiniTetrisPieceView(piece: game.nextPiece, side: compact ? 8 : 10)
             }
             .frame(maxWidth: .infinity)
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .padding(.vertical, compact ? 7 : 10)
         .background(SaoleiPalette.card)
         .clipShape(RoundedRectangle(cornerRadius: 19, style: .continuous))
         .shadow(color: SaoleiPalette.blue.opacity(0.10), radius: 12, y: 6)
+    }
+
+    private func boardWithStatus(side: CGFloat, compact: Bool = false) -> some View {
+        ZStack {
+            gameBoard(side: side)
+            if game.status != .playing {
+                statusOverlay(compact: compact)
+            }
+        }
     }
 
     private func gameBoard(side: CGFloat) -> some View {
@@ -159,41 +227,41 @@ struct TetrisView: View {
             }
     }
 
-    private var controlPanel: some View {
-        VStack(spacing: 10) {
-            HStack(spacing: 10) {
-                controlButton(title: "左移", systemName: "arrow.left") {
+    private func controlPanel(compact: Bool = false) -> some View {
+        VStack(spacing: compact ? 8 : 10) {
+            HStack(spacing: compact ? 8 : 10) {
+                controlButton(title: "左移", systemName: "arrow.left", compact: compact) {
                     game.moveLeft()
                 }
-                controlButton(title: "旋转", systemName: "rotate.right") {
+                controlButton(title: "旋转", systemName: "rotate.right", compact: compact) {
                     game.rotate()
                 }
-                controlButton(title: "右移", systemName: "arrow.right") {
+                controlButton(title: "右移", systemName: "arrow.right", compact: compact) {
                     game.moveRight()
                 }
             }
 
-            HStack(spacing: 10) {
-                controlButton(title: "下移", systemName: "arrow.down") {
+            HStack(spacing: compact ? 8 : 10) {
+                controlButton(title: "下移", systemName: "arrow.down", compact: compact) {
                     game.softDrop()
                 }
-                controlButton(title: "到底", systemName: "chevron.down.2") {
+                controlButton(title: "到底", systemName: "chevron.down.2", compact: compact) {
                     game.hardDrop()
                 }
             }
         }
     }
 
-    private func controlButton(title: String, systemName: String, action: @escaping () -> Void) -> some View {
+    private func controlButton(title: String, systemName: String, compact: Bool = false, action: @escaping () -> Void) -> some View {
         Button {
             action()
             fireImpact()
         } label: {
             Label(title, systemImage: systemName)
-                .font(.system(size: 16, weight: .black, design: .rounded))
+                .font(.system(size: compact ? 14 : 16, weight: .black, design: .rounded))
                 .foregroundStyle(SaoleiPalette.blueDeep)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
+                .padding(.vertical, compact ? 7 : 12)
                 .background(SaoleiPalette.card)
                 .clipShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
                 .shadow(color: SaoleiPalette.blue.opacity(0.09), radius: 8, y: 4)
@@ -203,16 +271,24 @@ struct TetrisView: View {
         .opacity(game.isPlaying ? 1 : 0.5)
     }
 
-    private var statusOverlay: some View {
+    private func instructions(compact: Bool = false) -> some View {
+        Text("左右拖动调整位置 · 向上拖动直接落下 · 点击旋转")
+            .font(.system(size: compact ? 12 : 14, weight: .medium, design: .rounded))
+            .foregroundStyle(SaoleiPalette.mutedInk)
+            .multilineTextAlignment(.center)
+            .lineLimit(compact ? 2 : 1)
+    }
+
+    private func statusOverlay(compact: Bool = false) -> some View {
         VStack(spacing: 12) {
             Image(systemName: game.status.symbol)
-                .font(.system(size: 28, weight: .bold))
+                .font(.system(size: compact ? 22 : 28, weight: .bold))
                 .foregroundStyle(statusTint)
             Text(game.status.title)
-                .font(.system(size: 20, weight: .black, design: .rounded))
+                .font(.system(size: compact ? 18 : 20, weight: .black, design: .rounded))
                 .foregroundStyle(SaoleiPalette.ink)
             Text(statusMessage)
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .font(.system(size: compact ? 12 : 14, weight: .semibold, design: .rounded))
                 .foregroundStyle(SaoleiPalette.mutedInk)
 
             Button {
@@ -227,19 +303,20 @@ struct TetrisView: View {
                 fireImpact()
             } label: {
                 Text(statusButtonTitle)
-                    .font(.system(size: 16, weight: .black, design: .rounded))
+                    .font(.system(size: compact ? 14 : 16, weight: .black, design: .rounded))
                     .foregroundStyle(.white)
-                    .padding(.horizontal, 22)
-                    .padding(.vertical, 11)
+                    .padding(.horizontal, compact ? 16 : 22)
+                    .padding(.vertical, compact ? 8 : 11)
                     .background(statusTint)
                     .clipShape(Capsule())
             }
         }
-        .padding(.horizontal, 22)
-        .padding(.vertical, 20)
+        .padding(.horizontal, compact ? 14 : 22)
+        .padding(.vertical, compact ? 14 : 20)
         .background(.white.opacity(0.95))
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .shadow(color: SaoleiPalette.blueDeep.opacity(0.20), radius: 16, y: 8)
+        .zIndex(1)
     }
 
     private var statusMessage: String {
@@ -303,7 +380,12 @@ private struct TetrisBoardCell: View {
 
 private struct MiniTetrisPieceView: View {
     let piece: TetrisPiece
-    private let side: CGFloat = 10
+    let side: CGFloat
+
+    init(piece: TetrisPiece, side: CGFloat = 10) {
+        self.piece = piece
+        self.side = side
+    }
 
     var body: some View {
         LazyVGrid(columns: Array(repeating: GridItem(.fixed(side), spacing: 1), count: 4), spacing: 1) {
