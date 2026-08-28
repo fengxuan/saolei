@@ -42,6 +42,16 @@ enum ChessPieceType: String, CaseIterable, Hashable {
         case .king: return 20_000
         }
     }
+
+    var captureValue: Int {
+        switch self {
+        case .pawn: return 1
+        case .knight, .bishop: return 3
+        case .rook: return 5
+        case .queen: return 9
+        case .king: return 0
+        }
+    }
 }
 
 struct ChessSquare: Hashable {
@@ -208,6 +218,8 @@ struct ChessGame {
         let lastCapturedPiece: ChessPiece?
         let lastPlayerMove: ChessMove?
         let lastPlayerCapturedPiece: ChessPiece?
+        let playerCaptureScore: Int
+        let botCaptureScore: Int
     }
 
     private(set) var difficulty: ChessDifficulty
@@ -219,6 +231,8 @@ struct ChessGame {
     private(set) var lastCapturedPiece: ChessPiece?
     private(set) var lastPlayerMove: ChessMove?
     private(set) var lastPlayerCapturedPiece: ChessPiece?
+    private(set) var playerCaptureScore = 0
+    private(set) var botCaptureScore = 0
 
     private var castlingRights = CastlingRights()
     private var enPassantTarget: ChessSquare?
@@ -243,6 +257,8 @@ struct ChessGame {
         lastCapturedPiece = nil
         lastPlayerMove = nil
         lastPlayerCapturedPiece = nil
+        playerCaptureScore = 0
+        botCaptureScore = 0
         castlingRights = CastlingRights()
         enPassantTarget = nil
         halfmoveClock = 0
@@ -299,6 +315,7 @@ struct ChessGame {
         lastCapturedPiece = capturedPiece
         lastPlayerMove = move
         lastPlayerCapturedPiece = capturedPiece
+        playerCaptureScore += capturedPiece?.type.captureValue ?? 0
         apply(move)
         lastMove = move
         moveCount += 1
@@ -309,7 +326,9 @@ struct ChessGame {
     mutating func playBotMove() -> Bool {
         guard status == .botThinking, let move = bestBotMove() else { return false }
         history.append(snapshot())
-        lastCapturedPiece = capturedPiece(for: move)
+        let capturedPiece = capturedPiece(for: move)
+        lastCapturedPiece = capturedPiece
+        botCaptureScore += capturedPiece?.type.captureValue ?? 0
         apply(move)
         lastMove = move
         moveCount += 1
@@ -587,7 +606,9 @@ struct ChessGame {
             halfmoveClock: halfmoveClock,
             lastCapturedPiece: lastCapturedPiece,
             lastPlayerMove: lastPlayerMove,
-            lastPlayerCapturedPiece: lastPlayerCapturedPiece
+            lastPlayerCapturedPiece: lastPlayerCapturedPiece,
+            playerCaptureScore: playerCaptureScore,
+            botCaptureScore: botCaptureScore
         )
     }
 
@@ -603,6 +624,8 @@ struct ChessGame {
         lastCapturedPiece = snapshot.lastCapturedPiece
         lastPlayerMove = snapshot.lastPlayerMove
         lastPlayerCapturedPiece = snapshot.lastPlayerCapturedPiece
+        playerCaptureScore = snapshot.playerCaptureScore
+        botCaptureScore = snapshot.botCaptureScore
     }
 
     private func isSquareAttacked(_ target: ChessSquare, by attacker: ChessColor) -> Bool {

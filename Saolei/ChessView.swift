@@ -25,7 +25,7 @@ struct ChessView: View {
     @State private var gameplayMessageOpacity = 1.0
     @State private var gameplayMessageID = UUID()
     @State private var highlightedBotMove: ChessMove?
-    @State private var capturedBotPieceMarker: ChessCapturedPieceMarker?
+    @State private var capturedPieceMarker: ChessCapturedPieceMarker?
 
     init(difficulty: ChessDifficulty) {
         self.difficulty = difficulty
@@ -242,6 +242,26 @@ struct ChessView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .frame(height: 20)
+
+            HStack(spacing: 8) {
+                Image(systemName: "chart.bar.fill")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(accentColor)
+
+                Text("吃子分值")
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.mutedInk)
+
+                Spacer(minLength: 4)
+
+                Text("你 \(game.playerCaptureScore) : \(game.botCaptureScore) 电脑")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.ink)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.70)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(height: 20)
         }
         .padding(16)
         .background(SaoleiPalette.card)
@@ -375,10 +395,10 @@ struct ChessView: View {
                     .accessibilityHidden(true)
             }
 
-            if let capturedBotPieceMarker {
+            if let capturedPieceMarker {
                 ChessCapturedPieceMarkerView(
-                    piece: capturedBotPieceMarker.piece,
-                    square: capturedBotPieceMarker.square,
+                    piece: capturedPieceMarker.piece,
+                    square: capturedPieceMarker.square,
                     cellSide: cellSide
                 )
                 .frame(width: boardGridSide, height: boardGridSide)
@@ -452,12 +472,13 @@ struct ChessView: View {
 
     private func play(_ move: ChessMove) {
         highlightedBotMove = nil
-        capturedBotPieceMarker = nil
+        capturedPieceMarker = nil
         selectedSquare = nil
         pendingPromotionMoves = []
         showingPromotionChoice = false
 
         guard game.playPlayerMove(move) else { return }
+        capturedPieceMarker = makeCapturedPieceMarker(for: move, capturedPiece: game.lastCapturedPiece)
         showMoveMessage(mover: "你")
         fireImpact()
 
@@ -477,13 +498,10 @@ struct ChessView: View {
 
             if game.playBotMove() {
                 highlightedBotMove = game.lastMove
-                if let botMove = game.lastMove,
-                   let capturedPiece = game.lastCapturedPiece,
-                   capturedPiece.color == .white {
-                    let capturedSquare = botMove.isEnPassant
-                        ? ChessSquare(row: botMove.from.row, column: botMove.to.column)
-                        : botMove.to
-                    capturedBotPieceMarker = ChessCapturedPieceMarker(piece: capturedPiece, square: capturedSquare)
+                if let botMove = game.lastMove {
+                    if let marker = makeCapturedPieceMarker(for: botMove, capturedPiece: game.lastCapturedPiece) {
+                        capturedPieceMarker = marker
+                    }
                 }
                 showMoveMessage(mover: "电脑")
                 if game.status.isFinished {
@@ -495,10 +513,21 @@ struct ChessView: View {
         }
     }
 
+    private func makeCapturedPieceMarker(
+        for move: ChessMove,
+        capturedPiece: ChessPiece?
+    ) -> ChessCapturedPieceMarker? {
+        guard let capturedPiece else { return nil }
+        let capturedSquare = move.isEnPassant
+            ? ChessSquare(row: move.from.row, column: move.to.column)
+            : move.to
+        return ChessCapturedPieceMarker(piece: capturedPiece, square: capturedSquare)
+    }
+
     private func restartGame() {
         botTurnID = UUID()
         highlightedBotMove = nil
-        capturedBotPieceMarker = nil
+        capturedPieceMarker = nil
         selectedSquare = nil
         pendingPromotionMoves = []
         showingPromotionChoice = false
@@ -510,7 +539,7 @@ struct ChessView: View {
     private func undoGame() {
         botTurnID = UUID()
         highlightedBotMove = nil
-        capturedBotPieceMarker = nil
+        capturedPieceMarker = nil
         selectedSquare = nil
         pendingPromotionMoves = []
         showingPromotionChoice = false
@@ -594,16 +623,37 @@ private struct ChessCapturedPieceMarkerView: View {
     let square: ChessSquare
     let cellSide: CGFloat
 
+    private var markerSymbol: String {
+        switch piece.type {
+        case .pawn: return "♙"
+        case .knight: return "♘"
+        case .bishop: return "♗"
+        case .rook: return "♖"
+        case .queen: return "♕"
+        case .king: return "♔"
+        }
+    }
+
+    private var markerColor: Color {
+        piece.color == .white ? .white : ChessPalette.blackPiece
+    }
+
     var body: some View {
-        Text(piece.symbol)
+        Text(markerSymbol)
             .font(.system(size: cellSide * 0.40, weight: .regular, design: .serif))
-            .foregroundStyle(.white)
-            .shadow(color: .black.opacity(0.40), radius: 1, y: 1)
-        .position(
-            x: CGFloat(square.column) * cellSide + cellSide * 0.80,
-            y: CGFloat(square.row) * cellSide + cellSide * 0.20
-        )
-        .accessibilityLabel("被吃掉的\(piece.color.title)\(piece.type.title)")
+            .foregroundStyle(markerColor)
+            .shadow(
+                color: piece.color == .white
+                    ? .black.opacity(0.40)
+                    : ChessPalette.lightSquare.opacity(0.62),
+                radius: 1,
+                y: 1
+            )
+            .position(
+                x: CGFloat(square.column) * cellSide + cellSide * 0.80,
+                y: CGFloat(square.row) * cellSide + cellSide * 0.20
+            )
+            .accessibilityLabel("被吃掉的\(piece.color.title)\(piece.type.title)")
     }
 }
 
@@ -770,7 +820,7 @@ private struct ChessSquareButton: View {
 
                 if let piece {
                     Text(piece.symbol)
-                        .font(.system(size: side * 0.72, weight: .regular, design: .serif))
+                        .font(.system(size: side * (piece.color == .white ? 0.79 : 0.72), weight: .regular, design: .serif))
                         .foregroundStyle(piece.color == .white ? .white : ChessPalette.blackPiece)
                         .shadow(
                             color: piece.color == .white
