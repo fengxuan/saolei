@@ -34,13 +34,13 @@ struct TwentyFourView: View {
         VStack(spacing: 16) {
             gameHeader
             statusCard
+            numbersCard
+            operationCard
 
             if !game.steps.isEmpty {
                 stepsCard
             }
 
-            numbersCard
-            operationCard
             rulesCard
             answerSection
         }
@@ -57,13 +57,12 @@ struct TwentyFourView: View {
             HStack(alignment: .top, spacing: 16) {
                 VStack(spacing: 14) {
                     statusCard
+                    numbersCard
+                    operationCard
 
                     if !game.steps.isEmpty {
                         stepsCard
                     }
-
-                    numbersCard
-                    operationCard
                 }
                 .frame(maxWidth: .infinity, alignment: .top)
 

@@ -24,6 +24,8 @@ struct ChessView: View {
     @State private var gameplayMessageIsCheck = false
     @State private var gameplayMessageOpacity = 1.0
     @State private var gameplayMessageID = UUID()
+    @State private var highlightedBotMove: ChessMove?
+    @State private var capturedBotPieceMarker: ChessCapturedPieceMarker?
 
     init(difficulty: ChessDifficulty) {
         self.difficulty = difficulty
@@ -230,6 +232,12 @@ struct ChessView: View {
                     Label("\(game.turn.title)正在被将军", systemImage: "exclamationmark.triangle.fill")
                         .font(.system(size: 13, weight: .bold, design: .rounded))
                         .foregroundStyle(ChessPalette.check)
+                } else if game.status == .playerTurn, let lastPlayerMove = game.lastPlayerMove {
+                    Text(lastPlayerMoveSummary(lastPlayerMove))
+                        .font(.system(size: 13, weight: .semibold, design: .rounded))
+                        .foregroundStyle(SaoleiPalette.mutedInk)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.65)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -335,22 +343,47 @@ struct ChessView: View {
         let cellSide = boardGridSide / 8
         let legalTargets = Set(selectedSquare.map { game.legalMoves(from: $0).map(\.to) } ?? [])
 
-        return LazyVGrid(
-            columns: Array(repeating: GridItem(.fixed(cellSide), spacing: 0), count: 8),
-            spacing: 0
-        ) {
-            ForEach(0..<64, id: \.self) { index in
-                let square = ChessSquare(row: index / 8, column: index % 8)
-                ChessSquareButton(
-                    square: square,
-                    piece: game.board[square],
-                    side: cellSide,
-                    isSelected: selectedSquare == square,
-                    isLegalTarget: legalTargets.contains(square),
-                    isLastMoveSquare: game.lastMove?.from == square || game.lastMove?.to == square,
-                    isCheckSquare: isCheckSquare(square),
-                    action: { tapSquare(square) }
+        return ZStack {
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.fixed(cellSide), spacing: 0), count: 8),
+                spacing: 0
+            ) {
+                ForEach(0..<64, id: \.self) { index in
+                    let square = ChessSquare(row: index / 8, column: index % 8)
+                    ChessSquareButton(
+                        square: square,
+                        piece: game.board[square],
+                        side: cellSide,
+                        isSelected: selectedSquare == square,
+                        isLegalTarget: legalTargets.contains(square),
+                        isLastMoveSquare: game.lastMove?.from == square || game.lastMove?.to == square,
+                        isCheckSquare: isCheckSquare(square),
+                        action: { tapSquare(square) }
+                    )
+                }
+            }
+            .frame(width: boardGridSide, height: boardGridSide)
+
+            if let highlightedBotMove {
+                ChessMoveArrow(
+                    move: highlightedBotMove,
+                    cellSide: cellSide,
+                    isKnightMove: game.board[highlightedBotMove.to]?.type == .knight
                 )
+                    .frame(width: boardGridSide, height: boardGridSide)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
+
+            if let capturedBotPieceMarker {
+                ChessCapturedPieceMarkerView(
+                    piece: capturedBotPieceMarker.piece,
+                    square: capturedBotPieceMarker.square,
+                    cellSide: cellSide
+                )
+                .frame(width: boardGridSide, height: boardGridSide)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
             }
         }
         .frame(width: boardGridSide, height: boardGridSide)
@@ -366,6 +399,13 @@ struct ChessView: View {
     private func isCheckSquare(_ square: ChessSquare) -> Bool {
         guard let piece = game.board[square], piece.type == .king else { return false }
         return game.isInCheck(for: piece.color)
+    }
+
+    private func lastPlayerMoveSummary(_ move: ChessMove) -> String {
+        guard let capturedPiece = game.lastPlayerCapturedPiece else {
+            return "上一步你走了 \(move.notation)"
+        }
+        return "上一步你走了 \(move.notation) · 吃掉了\(capturedPiece.color.title)\(capturedPiece.type.title)"
     }
 
     private var accentColor: Color {
@@ -411,6 +451,8 @@ struct ChessView: View {
     }
 
     private func play(_ move: ChessMove) {
+        highlightedBotMove = nil
+        capturedBotPieceMarker = nil
         selectedSquare = nil
         pendingPromotionMoves = []
         showingPromotionChoice = false
@@ -434,6 +476,15 @@ struct ChessView: View {
             guard !Task.isCancelled, turnID == botTurnID, game.status == .botThinking else { return }
 
             if game.playBotMove() {
+                highlightedBotMove = game.lastMove
+                if let botMove = game.lastMove,
+                   let capturedPiece = game.lastCapturedPiece,
+                   capturedPiece.color == .white {
+                    let capturedSquare = botMove.isEnPassant
+                        ? ChessSquare(row: botMove.from.row, column: botMove.to.column)
+                        : botMove.to
+                    capturedBotPieceMarker = ChessCapturedPieceMarker(piece: capturedPiece, square: capturedSquare)
+                }
                 showMoveMessage(mover: "电脑")
                 if game.status.isFinished {
                     fireNotification(for: game.status)
@@ -446,6 +497,8 @@ struct ChessView: View {
 
     private func restartGame() {
         botTurnID = UUID()
+        highlightedBotMove = nil
+        capturedBotPieceMarker = nil
         selectedSquare = nil
         pendingPromotionMoves = []
         showingPromotionChoice = false
@@ -456,6 +509,8 @@ struct ChessView: View {
 
     private func undoGame() {
         botTurnID = UUID()
+        highlightedBotMove = nil
+        capturedBotPieceMarker = nil
         selectedSquare = nil
         pendingPromotionMoves = []
         showingPromotionChoice = false
@@ -526,6 +581,146 @@ struct ChessView: View {
     private func fireNotification(for status: ChessGameStatus) {
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(status == .playerWon ? .success : .error)
+    }
+}
+
+private struct ChessCapturedPieceMarker: Equatable {
+    let piece: ChessPiece
+    let square: ChessSquare
+}
+
+private struct ChessCapturedPieceMarkerView: View {
+    let piece: ChessPiece
+    let square: ChessSquare
+    let cellSide: CGFloat
+
+    var body: some View {
+        Text(piece.symbol)
+            .font(.system(size: cellSide * 0.40, weight: .regular, design: .serif))
+            .foregroundStyle(.white)
+            .shadow(color: .black.opacity(0.40), radius: 1, y: 1)
+        .position(
+            x: CGFloat(square.column) * cellSide + cellSide * 0.80,
+            y: CGFloat(square.row) * cellSide + cellSide * 0.20
+        )
+        .accessibilityLabel("被吃掉的\(piece.color.title)\(piece.type.title)")
+    }
+}
+
+private struct ChessMoveArrow: View {
+    let move: ChessMove
+    let cellSide: CGFloat
+    let isKnightMove: Bool
+
+    var body: some View {
+        let start = center(of: move.from)
+        let destination = center(of: move.to)
+        let direction = CGVector(dx: destination.x - start.x, dy: destination.y - start.y)
+        let distance = max(1, hypot(direction.dx, direction.dy))
+        let unit = CGVector(dx: direction.dx / distance, dy: direction.dy / distance)
+        let lineStart = isKnightMove
+            ? knightLineStart(from: start)
+            : offset(start, by: unit, distance: cellSide * 0.36)
+        let lineEnd = isKnightMove
+            ? knightLineEnd(from: destination)
+            : offset(destination, by: unit, distance: -cellSide * 0.36)
+        let control1 = isKnightMove ? knightControl1(from: lineStart) : lineStart
+        let control2 = isKnightMove ? knightControl2(to: lineEnd) : lineEnd
+        let arrowUnit = isKnightMove
+            ? normalized(CGVector(dx: lineEnd.x - control2.x, dy: lineEnd.y - control2.y))
+            : unit
+        let arrowSize = max(7, cellSide * 0.13)
+        let perpendicular = CGVector(dx: -arrowUnit.dy, dy: arrowUnit.dx)
+        let arrowBase = offset(lineEnd, by: arrowUnit, distance: -arrowSize)
+        let arrowLeft = offset(arrowBase, by: perpendicular, distance: arrowSize * 0.52)
+        let arrowRight = offset(arrowBase, by: perpendicular, distance: -arrowSize * 0.52)
+
+        Path { path in
+            path.move(to: lineStart)
+            if isKnightMove {
+                path.addCurve(to: lineEnd, control1: control1, control2: control2)
+            } else {
+                path.addLine(to: lineEnd)
+            }
+        }
+        .stroke(
+            SaoleiPalette.mint,
+            style: StrokeStyle(
+                lineWidth: max(2, cellSide * 0.035),
+                lineCap: .round,
+                lineJoin: .round,
+                dash: [cellSide * 0.16, cellSide * 0.13]
+            )
+        )
+        .overlay {
+            Path { path in
+                path.move(to: arrowLeft)
+                path.addLine(to: lineEnd)
+                path.addLine(to: arrowRight)
+            }
+            .stroke(
+                SaoleiPalette.mint,
+                style: StrokeStyle(
+                    lineWidth: max(2, cellSide * 0.035),
+                    lineCap: .round,
+                    lineJoin: .round
+                )
+            )
+        }
+        .shadow(color: SaoleiPalette.mint.opacity(0.45), radius: 2)
+    }
+
+    private func knightLineStart(from point: CGPoint) -> CGPoint {
+        offset(point, by: knightLongUnit, distance: cellSide * 0.36)
+    }
+
+    private func knightLineEnd(from point: CGPoint) -> CGPoint {
+        offset(point, by: knightShortUnit, distance: -cellSide * 0.36)
+    }
+
+    private func knightControl1(from point: CGPoint) -> CGPoint {
+        offset(point, by: knightLongUnit, distance: cellSide * 0.80)
+    }
+
+    private func knightControl2(to point: CGPoint) -> CGPoint {
+        offset(point, by: knightShortUnit, distance: -cellSide * 0.40)
+    }
+
+    private var knightLongUnit: CGVector {
+        let columnDelta = move.to.column - move.from.column
+        let rowDelta = move.to.row - move.from.row
+        if abs(columnDelta) > abs(rowDelta) {
+            return CGVector(dx: CGFloat(columnDelta.signum()), dy: 0)
+        }
+        return CGVector(dx: 0, dy: CGFloat(rowDelta.signum()))
+    }
+
+    private var knightShortUnit: CGVector {
+        let columnDelta = move.to.column - move.from.column
+        let rowDelta = move.to.row - move.from.row
+        if abs(columnDelta) > abs(rowDelta) {
+            return CGVector(dx: 0, dy: CGFloat(rowDelta.signum()))
+        }
+        return CGVector(dx: CGFloat(columnDelta.signum()), dy: 0)
+    }
+
+    private func normalized(_ vector: CGVector) -> CGVector {
+        let length = max(1, hypot(vector.dx, vector.dy))
+        return CGVector(dx: vector.dx / length, dy: vector.dy / length)
+    }
+
+    private func center(of square: ChessSquare) -> CGPoint {
+        CGPoint(
+            x: CGFloat(square.column) * cellSide + cellSide / 2,
+            y: CGFloat(square.row) * cellSide + cellSide / 2
+        )
+    }
+
+    private func offset(_ point: CGPoint, by vector: CGVector, distance: CGFloat) -> CGPoint {
+        CGPoint(
+            x: point.x + vector.dx * distance,
+            y: point.y + vector.dy * distance
+        )
     }
 }
 

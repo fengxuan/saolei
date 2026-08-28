@@ -206,6 +206,8 @@ struct ChessGame {
         let enPassantTarget: ChessSquare?
         let halfmoveClock: Int
         let lastCapturedPiece: ChessPiece?
+        let lastPlayerMove: ChessMove?
+        let lastPlayerCapturedPiece: ChessPiece?
     }
 
     private(set) var difficulty: ChessDifficulty
@@ -215,6 +217,8 @@ struct ChessGame {
     private(set) var lastMove: ChessMove?
     private(set) var moveCount = 0
     private(set) var lastCapturedPiece: ChessPiece?
+    private(set) var lastPlayerMove: ChessMove?
+    private(set) var lastPlayerCapturedPiece: ChessPiece?
 
     private var castlingRights = CastlingRights()
     private var enPassantTarget: ChessSquare?
@@ -237,6 +241,8 @@ struct ChessGame {
         lastMove = nil
         moveCount = 0
         lastCapturedPiece = nil
+        lastPlayerMove = nil
+        lastPlayerCapturedPiece = nil
         castlingRights = CastlingRights()
         enPassantTarget = nil
         halfmoveClock = 0
@@ -289,7 +295,10 @@ struct ChessGame {
     mutating func playPlayerMove(_ move: ChessMove) -> Bool {
         guard status == .playerTurn, legalMoves(for: .white).contains(move) else { return false }
         history.append(snapshot())
-        lastCapturedPiece = capturedPiece(for: move)
+        let capturedPiece = capturedPiece(for: move)
+        lastCapturedPiece = capturedPiece
+        lastPlayerMove = move
+        lastPlayerCapturedPiece = capturedPiece
         apply(move)
         lastMove = move
         moveCount += 1
@@ -576,7 +585,9 @@ struct ChessGame {
             castlingRights: castlingRights,
             enPassantTarget: enPassantTarget,
             halfmoveClock: halfmoveClock,
-            lastCapturedPiece: lastCapturedPiece
+            lastCapturedPiece: lastCapturedPiece,
+            lastPlayerMove: lastPlayerMove,
+            lastPlayerCapturedPiece: lastPlayerCapturedPiece
         )
     }
 
@@ -590,6 +601,8 @@ struct ChessGame {
         enPassantTarget = snapshot.enPassantTarget
         halfmoveClock = snapshot.halfmoveClock
         lastCapturedPiece = snapshot.lastCapturedPiece
+        lastPlayerMove = snapshot.lastPlayerMove
+        lastPlayerCapturedPiece = snapshot.lastPlayerCapturedPiece
     }
 
     private func isSquareAttacked(_ target: ChessSquare, by attacker: ChessColor) -> Bool {
