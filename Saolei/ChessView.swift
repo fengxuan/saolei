@@ -20,10 +20,7 @@ struct ChessView: View {
     @State private var pendingPromotionMoves: [ChessMove] = []
     @State private var showingPromotionChoice = false
     @State private var botTurnID = UUID()
-    @State private var gameplayMessage: String?
-    @State private var gameplayMessageIsCheck = false
-    @State private var gameplayMessageOpacity = 1.0
-    @State private var gameplayMessageID = UUID()
+    @State private var gameplayMessages: [ChessGameplayMessage] = []
     @State private var highlightedBotMove: ChessMove?
     @State private var capturedPieceMarker: ChessCapturedPieceMarker?
     @State private var hasShownInitialInstruction = false
@@ -268,6 +265,7 @@ struct ChessView: View {
         .background(SaoleiPalette.card)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .shadow(color: ChessPalette.boardFrame.opacity(0.10), radius: 12, y: 6)
+        .animation(.easeInOut(duration: 0.45), value: game.status)
     }
 
     private var controlsCard: some View {
@@ -287,26 +285,50 @@ struct ChessView: View {
             }
 
             Group {
-                if let gameplayMessage {
-                    Text(gameplayMessage)
-                        .foregroundStyle(gameplayMessageIsCheck ? ChessPalette.check : SaoleiPalette.mutedInk)
-                        .opacity(gameplayMessageOpacity)
-                } else if let selectedSquare {
-                    Text("已选中 \(selectedSquare.notation)，点击高亮格完成移动")
-                        .foregroundStyle(SaoleiPalette.mutedInk)
-                } else if !hasShownInitialInstruction {
-                    Text("点击白色棋子，棋盘会标出所有合法走法")
-                        .foregroundStyle(SaoleiPalette.mutedInk)
+                if gameplayMessages.isEmpty {
+                    VStack(alignment: .leading, spacing: 2) {
+                        if let selectedSquare {
+                            Text("已选中 \(selectedSquare.notation)，点击高亮格完成移动")
+                                .foregroundStyle(SaoleiPalette.mutedInk)
+                        } else if !hasShownInitialInstruction {
+                            Text("点击白色棋子，棋盘会标出所有合法走法")
+                                .foregroundStyle(SaoleiPalette.mutedInk)
+                        } else {
+                            Text("")
+                                .foregroundStyle(SaoleiPalette.mutedInk)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 } else {
-                    Text("")
-                        .foregroundStyle(SaoleiPalette.mutedInk)
+                    ScrollViewReader { proxy in
+                        ScrollView(.vertical, showsIndicators: false) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                ForEach(gameplayMessages) { message in
+                                    Text(message.text)
+                                        .foregroundStyle(message.isCheck ? ChessPalette.check : SaoleiPalette.mutedInk)
+                                        .lineLimit(1)
+                                        .minimumScaleFactor(0.70)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .frame(height: 18, alignment: .leading)
+                                        .id(message.id)
+                                        .transition(.opacity.combined(with: .move(edge: .bottom)))
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .frame(height: 38)
+                        .onChange(of: gameplayMessages.last?.id) { _ in
+                            guard let lastMessageID = gameplayMessages.last?.id else { return }
+                            withAnimation(.easeInOut(duration: 1.0)) {
+                                proxy.scrollTo(lastMessageID, anchor: .bottom)
+                            }
+                        }
+                    }
                 }
             }
                 .font(.system(size: 13, weight: .medium, design: .rounded))
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .frame(height: 18, alignment: .leading)
+                .frame(height: 38, alignment: .topLeading)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(15)
@@ -564,49 +586,27 @@ struct ChessView: View {
             "\(mover)吃掉了\($0.color.title)\($0.type.title)"
         }
 
-        if let checkMessage, let captureMessage {
-            showGameplayMessage("\(captureMessage) · \(checkMessage)", isCheck: true)
-        } else if let checkMessage {
-            showGameplayMessage(checkMessage, isCheck: true)
-        } else if let captureMessage {
-            showGameplayMessage(captureMessage, isCheck: false)
-        } else {
-            clearGameplayMessage()
-        }
+        let moveSummary = "\(mover)走了 \(game.lastMove?.notation ?? "")"
+        let details = [captureMessage, checkMessage].compactMap { $0 }
+        showGameplayMessage(
+            details.isEmpty ? moveSummary : "\(moveSummary) · \(details.joined(separator: " · "))",
+            isCheck: checkMessage != nil
+        )
     }
 
     private func showGameplayMessage(_ message: String, isCheck: Bool) {
-        let messageID = UUID()
-        gameplayMessageID = messageID
-        gameplayMessageIsCheck = isCheck
-        gameplayMessage = message
-        gameplayMessageOpacity = 0
-
-        withAnimation(.easeIn(duration: 0.45)) {
-            gameplayMessageOpacity = 1
+        var updatedMessages = gameplayMessages
+        updatedMessages.append(ChessGameplayMessage(text: message, isCheck: isCheck))
+        if updatedMessages.count > 8 {
+            updatedMessages.removeFirst(updatedMessages.count - 8)
         }
-
-        Task { @MainActor in
-            try? await Task.sleep(nanoseconds: 2_800_000_000)
-            guard messageID == gameplayMessageID else { return }
-
-            withAnimation(.easeOut(duration: 0.65)) {
-                gameplayMessageOpacity = 0
-            }
-
-            try? await Task.sleep(nanoseconds: 650_000_000)
-            guard messageID == gameplayMessageID else { return }
-            gameplayMessage = nil
-            gameplayMessageIsCheck = false
-            gameplayMessageOpacity = 1
+        withAnimation(.easeOut(duration: 0.55)) {
+            gameplayMessages = updatedMessages
         }
     }
 
     private func clearGameplayMessage() {
-        gameplayMessageID = UUID()
-        gameplayMessage = nil
-        gameplayMessageIsCheck = false
-        gameplayMessageOpacity = 1
+        gameplayMessages = []
     }
 
     private func fireImpact() {
@@ -617,6 +617,12 @@ struct ChessView: View {
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(status == .playerWon ? .success : .error)
     }
+}
+
+private struct ChessGameplayMessage: Identifiable {
+    let id = UUID()
+    let text: String
+    let isCheck: Bool
 }
 
 private struct ChessCapturedPieceMarker: Equatable {
