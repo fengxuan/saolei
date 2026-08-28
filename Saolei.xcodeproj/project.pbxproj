@@ -8,25 +8,33 @@
 
 /* Begin PBXBuildFile section */
 		3764CD3A36105B55EC208FDF /* SaoleiApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D24D671754F5674FCAB35F /* SaoleiApp.swift */; };
+		468FD996F69106C926BAA12C /* ChessModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6183062B08B596EFE54C878 /* ChessModel.swift */; };
 		474523DF0C9FB3ADC6816405 /* GameModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CAEF13EBDA38970E39C88A7 /* GameModel.swift */; };
 		A1B2C3D4E5F60718293A4B5C /* PokerModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5061728394A5B6C /* PokerModel.swift */; };
 		A1B2C3D4E5F60718293A4B5D /* PokerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5061728394A5B6D /* PokerView.swift */; };
 		B847645EC0A2C57C437D76BC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FED3BF83CAFE725C816D903 /* ContentView.swift */; };
+		CC54972442AD5EDAAE2D2D22 /* ChessView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 953D4D27ABBDE86B54047855 /* ChessView.swift */; };
 		D0E2D8D18AAB7661A8413DD7 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6B89D9088A77F03E3D619BF /* GameView.swift */; };
 		E2A7D2CB3F5F7D4C5D5B1A11 /* TetrisModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A7D2CB3F5F7D4C5D5B1A10 /* TetrisModel.swift */; };
 		E2A7D2CB3F5F7D4C5D5B1A13 /* TetrisView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A7D2CB3F5F7D4C5D5B1A12 /* TetrisView.swift */; };
+		F24A00000000000000000001 /* TwentyFourModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F24A00000000000000000003 /* TwentyFourModel.swift */; };
+		F24A00000000000000000002 /* TwentyFourView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F24A00000000000000000004 /* TwentyFourView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		464579A1A50B2B2A43C58C44 /* Saolei.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Saolei.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		6CAEF13EBDA38970E39C88A7 /* GameModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameModel.swift; sourceTree = "<group>"; };
+		953D4D27ABBDE86B54047855 /* ChessView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChessView.swift; sourceTree = "<group>"; };
 		9FED3BF83CAFE725C816D903 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		B1C2D3E4F5061728394A5B6C /* PokerModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokerModel.swift; sourceTree = "<group>"; };
 		B1C2D3E4F5061728394A5B6D /* PokerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PokerView.swift; sourceTree = "<group>"; };
+		C6183062B08B596EFE54C878 /* ChessModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChessModel.swift; sourceTree = "<group>"; };
 		D6B89D9088A77F03E3D619BF /* GameView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameView.swift; sourceTree = "<group>"; };
 		E2A7D2CB3F5F7D4C5D5B1A10 /* TetrisModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TetrisModel.swift; sourceTree = "<group>"; };
 		E2A7D2CB3F5F7D4C5D5B1A12 /* TetrisView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TetrisView.swift; sourceTree = "<group>"; };
 		F5D24D671754F5674FCAB35F /* SaoleiApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaoleiApp.swift; sourceTree = "<group>"; };
+		F24A00000000000000000003 /* TwentyFourModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwentyFourModel.swift; sourceTree = "<group>"; };
+		F24A00000000000000000004 /* TwentyFourView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwentyFourView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -49,6 +57,8 @@
 		F28EEF53CDDD36DFC72C940A /* Saolei */ = {
 			isa = PBXGroup;
 			children = (
+				C6183062B08B596EFE54C878 /* ChessModel.swift */,
+				953D4D27ABBDE86B54047855 /* ChessView.swift */,
 				9FED3BF83CAFE725C816D903 /* ContentView.swift */,
 				6CAEF13EBDA38970E39C88A7 /* GameModel.swift */,
 				D6B89D9088A77F03E3D619BF /* GameView.swift */,
@@ -57,6 +67,8 @@
 				E2A7D2CB3F5F7D4C5D5B1A12 /* TetrisView.swift */,
 				B1C2D3E4F5061728394A5B6C /* PokerModel.swift */,
 				B1C2D3E4F5061728394A5B6D /* PokerView.swift */,
+				F24A00000000000000000003 /* TwentyFourModel.swift */,
+				F24A00000000000000000004 /* TwentyFourView.swift */,
 			);
 			path = Saolei;
 			sourceTree = "<group>";
@@ -114,6 +126,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				468FD996F69106C926BAA12C /* ChessModel.swift in Sources */,
+				CC54972442AD5EDAAE2D2D22 /* ChessView.swift in Sources */,
 				B847645EC0A2C57C437D76BC /* ContentView.swift in Sources */,
 				474523DF0C9FB3ADC6816405 /* GameModel.swift in Sources */,
 				D0E2D8D18AAB7661A8413DD7 /* GameView.swift in Sources */,
@@ -122,6 +136,8 @@
 				E2A7D2CB3F5F7D4C5D5B1A13 /* TetrisView.swift in Sources */,
 				A1B2C3D4E5F60718293A4B5C /* PokerModel.swift in Sources */,
 				A1B2C3D4E5F60718293A4B5D /* PokerView.swift in Sources */,
+				F24A00000000000000000001 /* TwentyFourModel.swift in Sources */,
+				F24A00000000000000000002 /* TwentyFourView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

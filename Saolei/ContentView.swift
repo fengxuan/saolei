@@ -34,6 +34,41 @@ struct ContentView: View {
                         .frame(maxWidth: 900)
 
                         NavigationLink {
+                            TwentyFourView()
+                        } label: {
+                            TwentyFourEntryCard()
+                        }
+                        .buttonStyle(.plain)
+                        .frame(maxWidth: 900)
+
+                        NavigationLink {
+                            ChessView(difficulty: .beginner)
+                        } label: {
+                            ChessEntryCard()
+                        }
+                        .buttonStyle(.plain)
+                        .frame(maxWidth: 900)
+
+                        Text("选择国际象棋等级")
+                            .font(.system(size: 21, weight: .bold, design: .rounded))
+                            .foregroundStyle(SaoleiPalette.mutedInk)
+
+                        LazyVGrid(
+                            columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: proxy.size.width > 700 ? 3 : 1),
+                            spacing: 16
+                        ) {
+                            ForEach(ChessDifficulty.allCases) { difficulty in
+                                NavigationLink {
+                                    ChessView(difficulty: difficulty)
+                                } label: {
+                                    ChessDifficultyCard(difficulty: difficulty)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .frame(maxWidth: 900)
+
+                        NavigationLink {
                             PokerView(difficulty: .casual)
                         } label: {
                             PokerEntryCard()
@@ -79,7 +114,7 @@ struct ContentView: View {
                         }
                         .frame(maxWidth: 900)
 
-                        Text("扫雷、方块和牌桌，选一个开始挑战")
+                        Text("扫雷、方块、算 24 点和牌桌，选一个开始挑战")
                             .font(.system(size: 16, weight: .medium, design: .rounded))
                             .foregroundStyle(SaoleiPalette.mutedInk)
                     }
@@ -107,9 +142,101 @@ struct ContentView: View {
                 .font(.system(size: 42, weight: .black, design: .rounded))
                 .foregroundStyle(SaoleiPalette.ink)
 
-            Text("动动脑筋，挑战扫雷、俄罗斯方块和德州扑克！")
+            Text("动动脑筋，挑战扫雷、方块、算 24 点、国际象棋和德州扑克！")
                 .font(.system(size: 18, weight: .medium, design: .rounded))
                 .foregroundStyle(SaoleiPalette.mutedInk)
+        }
+    }
+}
+
+private struct ChessEntryCard: View {
+    var body: some View {
+        HStack(spacing: 16) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(ChessPalette.gold.opacity(0.17))
+                    .frame(width: 70, height: 70)
+                Text("♔♞")
+                    .font(.system(size: 31, design: .serif))
+                    .foregroundStyle(ChessPalette.boardFrame)
+            }
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text("国际象棋")
+                    .font(.system(size: 21, weight: .black, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.ink)
+                Text("和电脑对弈，练习布局、战术与将军")
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.mutedInk)
+            }
+
+            Spacer(minLength: 0)
+
+            Image(systemName: "arrow.right.circle.fill")
+                .font(.system(size: 25, weight: .bold))
+                .foregroundStyle(ChessPalette.gold)
+        }
+        .padding(16)
+        .background(SaoleiPalette.card)
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(ChessPalette.gold.opacity(0.40), lineWidth: 2)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .shadow(color: ChessPalette.gold.opacity(0.12), radius: 12, y: 6)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("国际象棋，和电脑对弈，练习布局、战术与将军，开始游戏")
+    }
+}
+
+private struct ChessDifficultyCard: View {
+    let difficulty: ChessDifficulty
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(accentColor)
+                    .frame(width: 14, height: 14)
+                Text(difficulty.title)
+                    .font(.system(size: 20, weight: .black, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.ink)
+            }
+
+            Text(difficulty.subtitle)
+                .font(.system(size: 15, weight: .medium, design: .rounded))
+                .foregroundStyle(SaoleiPalette.mutedInk)
+                .lineLimit(2)
+
+            HStack {
+                Text("开始对弈")
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                Spacer()
+                Image(systemName: "arrow.right.circle.fill")
+                    .font(.system(size: 21, weight: .bold))
+            }
+            .foregroundStyle(accentColor)
+            .padding(.top, 8)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(20)
+        .background(SaoleiPalette.card)
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(accentColor.opacity(0.28), lineWidth: 2)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .shadow(color: ChessPalette.boardFrame.opacity(0.10), radius: 12, y: 6)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("国际象棋等级：\(difficulty.title)，\(difficulty.subtitle)，开始对弈")
+    }
+
+    private var accentColor: Color {
+        switch difficulty.accent {
+        case .mint: return SaoleiPalette.mint
+        case .sky: return SaoleiPalette.sky
+        case .orange: return SaoleiPalette.orange
+        case .purple: return SaoleiPalette.purple
         }
     }
 }
@@ -241,6 +368,46 @@ private struct TetrisEntryCard: View {
         .shadow(color: SaoleiPalette.purple.opacity(0.11), radius: 12, y: 6)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("俄罗斯方块，移动、旋转方块，拼满一行就消除，开始游戏")
+    }
+}
+
+private struct TwentyFourEntryCard: View {
+    var body: some View {
+        HStack(spacing: 16) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(SaoleiPalette.orange.opacity(0.15))
+                    .frame(width: 70, height: 70)
+                Text("24")
+                    .font(.system(size: 29, weight: .black, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.orange)
+            }
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text("算 24 点")
+                    .font(.system(size: 21, weight: .black, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.ink)
+                Text("用四个数字和四则运算，挑战算出 24")
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.mutedInk)
+            }
+
+            Spacer(minLength: 0)
+
+            Image(systemName: "arrow.right.circle.fill")
+                .font(.system(size: 25, weight: .bold))
+                .foregroundStyle(SaoleiPalette.orange)
+        }
+        .padding(16)
+        .background(SaoleiPalette.card)
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(SaoleiPalette.orange.opacity(0.34), lineWidth: 2)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .shadow(color: SaoleiPalette.orange.opacity(0.11), radius: 12, y: 6)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("算 24 点，用四个数字和四则运算，挑战算出 24，开始游戏")
     }
 }
 
