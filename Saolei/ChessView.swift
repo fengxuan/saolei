@@ -26,6 +26,7 @@ struct ChessView: View {
     @State private var gameplayMessageID = UUID()
     @State private var highlightedBotMove: ChessMove?
     @State private var capturedPieceMarker: ChessCapturedPieceMarker?
+    @State private var hasShownInitialInstruction = false
 
     init(difficulty: ChessDifficulty) {
         self.difficulty = difficulty
@@ -290,10 +291,14 @@ struct ChessView: View {
                     Text(gameplayMessage)
                         .foregroundStyle(gameplayMessageIsCheck ? ChessPalette.check : SaoleiPalette.mutedInk)
                         .opacity(gameplayMessageOpacity)
+                } else if let selectedSquare {
+                    Text("已选中 \(selectedSquare.notation)，点击高亮格完成移动")
+                        .foregroundStyle(SaoleiPalette.mutedInk)
+                } else if !hasShownInitialInstruction {
+                    Text("点击白色棋子，棋盘会标出所有合法走法")
+                        .foregroundStyle(SaoleiPalette.mutedInk)
                 } else {
-                    Text(selectedSquare == nil
-                         ? "点击白色棋子，棋盘会标出所有合法走法"
-                         : "已选中 \(selectedSquare?.notation ?? "")，点击高亮格完成移动")
+                    Text("")
                         .foregroundStyle(SaoleiPalette.mutedInk)
                 }
             }
@@ -449,6 +454,7 @@ struct ChessView: View {
 
     private func tapSquare(_ square: ChessSquare) {
         guard game.status == .playerTurn else { return }
+        hasShownInitialInstruction = true
 
         if let selectedSquare {
             let choices = game.legalMoves(from: selectedSquare).filter { $0.to == square }
