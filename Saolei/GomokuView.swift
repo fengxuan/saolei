@@ -6,8 +6,8 @@ enum GomokuPalette {
     static let boardFrame = Color(red: 0.27, green: 0.16, blue: 0.10)
     static let board = Color(red: 0.86, green: 0.65, blue: 0.34)
     static let grid = Color(red: 0.31, green: 0.19, blue: 0.11)
-    static let playerStone = Color(red: 0.07, green: 0.08, blue: 0.11)
-    static let botStone = Color(red: 0.96, green: 0.96, blue: 0.94)
+    static let playerStone = Color(red: 0.02, green: 0.03, blue: 0.06)
+    static let botStone = Color(red: 0.96, green: 0.98, blue: 1.0)
     static let winning = Color(red: 0.94, green: 0.36, blue: 0.22)
 }
 
@@ -37,27 +37,57 @@ struct GomokuView: View {
         }
     }
 
+    @ViewBuilder
     private func gameLayout(in proxy: GeometryProxy) -> some View {
+        if proxy.size.width > proxy.size.height {
+            landscapeLayout(in: proxy)
+        } else {
+            portraitLayout(in: proxy)
+        }
+    }
+
+    private func portraitLayout(in proxy: GeometryProxy) -> some View {
         let boardSide = min(
             720,
-            proxy.size.width - 36,
-            max(300, proxy.size.height - 300)
+            max(180, proxy.size.width - 64),
+            max(180, proxy.size.height - 320)
         )
 
-        return ScrollView {
-            VStack(spacing: 12) {
-                pageHeader
-                statusCard
+        return VStack(spacing: 8) {
+            pageHeader
+            statusCard
+            teachingCard
+            gameBoard(side: boardSide)
+            restartButton
+        }
+        .frame(maxWidth: 820, maxHeight: .infinity, alignment: .top)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+    }
+
+    private func landscapeLayout(in proxy: GeometryProxy) -> some View {
+        let boardSide = min(
+            720,
+            max(200, proxy.size.height - 30),
+            proxy.size.width * 0.58
+        )
+
+        return HStack(alignment: .center, spacing: 14) {
+            gameBoard(side: boardSide)
+
+            VStack(alignment: .leading, spacing: 10) {
+                landscapeHeader
+                landscapeStatusCard
                 teachingCard
-                gameBoard(side: boardSide)
-                controlsCard
+                Spacer(minLength: 0)
                 restartButton
             }
-            .frame(maxWidth: 820)
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 18)
-            .padding(.vertical, 12)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
+        .frame(maxWidth: 1100, maxHeight: .infinity, alignment: .center)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
     }
 
     private var pageHeader: some View {
@@ -128,70 +158,89 @@ struct GomokuView: View {
         .animation(.easeInOut(duration: 0.35), value: game.status)
     }
 
+    private var landscapeHeader: some View {
+        HStack(alignment: .center, spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("五子棋")
+                    .font(.system(size: 22, weight: .black, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.ink)
+                Text("人机对战 · \(difficulty.title)")
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(accentColor)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 0)
+
+            Text("第 \(game.moveCount + 1) 手")
+                .font(.system(size: 13, weight: .bold, design: .rounded))
+                .foregroundStyle(GomokuPalette.boardFrame)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var landscapeStatusCard: some View {
+        VStack(alignment: .leading, spacing: 7) {
+            HStack(spacing: 8) {
+                Image(systemName: game.status.symbol)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(statusTint)
+
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(game.status.title)
+                        .font(.system(size: 16, weight: .black, design: .rounded))
+                        .foregroundStyle(SaoleiPalette.ink)
+                        .lineLimit(1)
+                    Text(game.status.detail)
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundStyle(SaoleiPalette.mutedInk)
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 0)
+            }
+
+            HStack(spacing: 10) {
+                GomokuStoneLegend(stone: .player, title: "黑方")
+                GomokuStoneLegend(stone: .bot, title: "白方")
+                Spacer(minLength: 0)
+            }
+        }
+        .padding(12)
+        .background(SaoleiPalette.card)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .shadow(color: GomokuPalette.boardFrame.opacity(0.10), radius: 10, y: 5)
+        .animation(.easeInOut(duration: 0.35), value: game.status)
+    }
+
     private var teachingCard: some View {
         let tip = game.teachingTip
 
-        return VStack(alignment: .leading, spacing: 13) {
-            HStack(spacing: 8) {
-                Image(systemName: "graduationcap.fill")
-                    .foregroundStyle(accentColor)
-                Text("教学提示")
-                    .font(.system(size: 16, weight: .black, design: .rounded))
-                    .foregroundStyle(SaoleiPalette.ink)
+        return HStack(spacing: 8) {
+            Image(systemName: tip.symbol)
+                .font(.system(size: 16, weight: .bold))
+                .foregroundStyle(accentColor)
 
-                Spacer(minLength: 0)
-
-                Text("边玩边学")
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundStyle(accentColor)
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 5)
-                    .background(accentColor.opacity(0.12))
-                    .clipShape(Capsule())
-            }
-
-            HStack(alignment: .top, spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(accentColor.opacity(0.14))
-                        .frame(width: 44, height: 44)
-                    Image(systemName: tip.symbol)
-                        .font(.system(size: 19, weight: .bold))
-                        .foregroundStyle(accentColor)
-                }
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(tip.title)
-                        .font(.system(size: 17, weight: .black, design: .rounded))
-                        .foregroundStyle(SaoleiPalette.ink)
-                    Text(tip.message)
-                        .font(.system(size: 14, weight: .medium, design: .rounded))
-                        .foregroundStyle(SaoleiPalette.mutedInk)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-
-            HStack(spacing: 8) {
-                ForEach(GomokuLearningSkill.allCases) { skill in
-                    GomokuSkillBadge(
-                        skill: skill,
-                        isHighlighted: skill == tip.skill
-                    )
-                }
-            }
+            Text("玩法：黑方先行，连成五子获胜 · 教学：\(tip.message)")
+                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .foregroundStyle(SaoleiPalette.mutedInk)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+                .truncationMode(.tail)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(SaoleiPalette.card)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(GomokuPalette.board.opacity(0.16))
         .overlay {
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(accentColor.opacity(0.28), lineWidth: 2)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(accentColor.opacity(0.22), lineWidth: 1.5)
         }
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .shadow(color: GomokuPalette.boardFrame.opacity(0.10), radius: 12, y: 6)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .animation(.easeInOut(duration: 0.35), value: tip)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("教学提示：\(tip.title)。\(tip.message)。正在练习\(tip.skill.title)")
+        .accessibilityLabel("玩法和教学提示：黑方先行，连成五子获胜。\(tip.title)：\(tip.message)。正在练习\(tip.skill.title)")
     }
 
     private func gameBoard(side: CGFloat) -> some View {
@@ -270,23 +319,6 @@ struct GomokuView: View {
         .disabled(game.status != .playerTurn || stone != .empty)
         .accessibilityLabel("第 \(row + 1) 行，第 \(column + 1) 列，\(stone.title)")
         .accessibilityHint(stone == .empty && game.status == .playerTurn ? "轻点落子" : "")
-    }
-
-    private var controlsCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("玩法提示", systemImage: "lightbulb.fill")
-                .font(.system(size: 16, weight: .black, design: .rounded))
-                .foregroundStyle(accentColor)
-
-            Text("黑方先行，横、竖或斜线连成五个棋子即可获胜。点击空位落子，电脑会自动应战。")
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundStyle(SaoleiPalette.mutedInk)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(15)
-        .background(GomokuPalette.board.opacity(0.16))
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     private var restartButton: some View {
@@ -376,16 +408,16 @@ private struct GomokuBoardCell: View {
         ZStack {
             if stone != .empty {
                 Circle()
-                    .fill(stone == .player ? GomokuPalette.playerStone : GomokuPalette.botStone)
+                    .fill(stoneFill)
                     .overlay {
                         Circle()
                             .stroke(
-                                stone == .player ? .white.opacity(0.16) : GomokuPalette.grid.opacity(0.28),
+                                stone == .player ? .white.opacity(0.20) : GomokuPalette.grid.opacity(0.30),
                                 lineWidth: max(0.8, side * 0.035)
                             )
                     }
                     .shadow(
-                        color: .black.opacity(stone == .player ? 0.28 : 0.16),
+                        color: .black.opacity(stone == .player ? 0.28 : 0.24),
                         radius: max(2, side * 0.08),
                         y: max(1, side * 0.04)
                     )
@@ -407,6 +439,33 @@ private struct GomokuBoardCell: View {
         .frame(width: side, height: side)
         .contentShape(Rectangle())
     }
+
+    private var stoneFill: LinearGradient {
+        switch stone {
+        case .player:
+            return LinearGradient(
+                colors: [
+                    Color(red: 0.30, green: 0.34, blue: 0.42),
+                    GomokuPalette.playerStone,
+                    Color(red: 0.01, green: 0.01, blue: 0.02)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .bot:
+            return LinearGradient(
+                colors: [
+                    .white,
+                    GomokuPalette.botStone,
+                    Color(red: 0.82, green: 0.87, blue: 0.95)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        case .empty:
+            return LinearGradient(colors: [.clear, .clear], startPoint: .top, endPoint: .bottom)
+        }
+    }
 }
 
 private struct GomokuStoneLegend: View {
@@ -419,40 +478,12 @@ private struct GomokuStoneLegend: View {
                 .fill(stone == .player ? GomokuPalette.playerStone : GomokuPalette.botStone)
                 .overlay {
                     Circle()
-                        .stroke(GomokuPalette.grid.opacity(0.25), lineWidth: 1)
+                        .stroke(GomokuPalette.grid.opacity(0.78), lineWidth: 1.5)
                 }
                 .frame(width: 20, height: 20)
             Text(title)
                 .font(.system(size: 13, weight: .bold, design: .rounded))
                 .foregroundStyle(SaoleiPalette.ink)
-        }
-    }
-}
-
-private struct GomokuSkillBadge: View {
-    let skill: GomokuLearningSkill
-    let isHighlighted: Bool
-
-    var body: some View {
-        HStack(spacing: 4) {
-            Image(systemName: skill.symbol)
-                .font(.system(size: 11, weight: .bold))
-            Text(skill.title)
-                .font(.system(size: 12, weight: .bold, design: .rounded))
-        }
-        .foregroundStyle(isHighlighted ? accentColor : SaoleiPalette.mutedInk)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
-        .background(isHighlighted ? accentColor.opacity(0.14) : SaoleiPalette.background)
-        .clipShape(Capsule())
-    }
-
-    private var accentColor: Color {
-        switch skill {
-        case .observe: return SaoleiPalette.blue
-        case .count: return SaoleiPalette.mint
-        case .plan: return SaoleiPalette.orange
-        case .focus: return SaoleiPalette.purple
         }
     }
 }

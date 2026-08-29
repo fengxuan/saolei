@@ -177,7 +177,7 @@ struct GomokuGame {
             if botWinningMoves > 0 {
                 return GomokuTeachingTip(
                     title: "小小防守员",
-                    message: "白方有一步就能连成五子。先找出白子最长的一条线，再看看哪里需要挡住。",
+                    message: "白方快连成五子了，先找最长的一条线，想想哪里要挡。",
                     skill: .observe,
                     symbol: "shield.fill"
                 )
@@ -186,7 +186,7 @@ struct GomokuGame {
             if playerWinningMoves > 0 {
                 return GomokuTeachingTip(
                     title: "发现好机会",
-                    message: "你找到可以完成五子的方向啦！横、竖、斜线都数一数，选出能连成五子的空位。",
+                    message: "你有机会连成五子，横、竖、斜线都数一数。",
                     skill: .count,
                     symbol: "sparkles"
                 )
@@ -196,28 +196,28 @@ struct GomokuGame {
             case 0:
                 return GomokuTeachingTip(
                     title: "第一步：认识棋盘",
-                    message: "先观察棋盘中间。想一想：从一个位置出发，有横、竖、斜线几个方向可以发展？",
+                    message: "看棋盘中心，想一想有几个方向可以发展。",
                     skill: .observe,
                     symbol: "eye.fill"
                 )
             case 1...4:
                 return GomokuTeachingTip(
                     title: "边下边数",
-                    message: "落子前，从自己的棋子开始数一数，哪条线上已经有两颗或三颗？",
+                    message: "数一数自己的棋子，哪条线已有两颗或三颗？",
                     skill: .count,
                     symbol: "number.circle.fill"
                 )
             case 5...10:
                 return GomokuTeachingTip(
                     title: "想一想下一步",
-                    message: "先不要急着落子。问问自己：放在这里后，下一步还能往哪个方向继续？",
+                    message: "落子前想一想，下一步还能往哪个方向继续？",
                     skill: .plan,
                     symbol: "arrow.triangle.branch"
                 )
             default:
                 return GomokuTeachingTip(
                     title: "四个方向都看看",
-                    message: "每次落子前，依次检查横、竖和两条斜线。耐心观察，通常会发现更好的机会。",
+                    message: "检查横、竖和两条斜线，耐心寻找机会。",
                     skill: .focus,
                     symbol: "scope"
                 )
@@ -226,7 +226,7 @@ struct GomokuGame {
         case .botThinking:
             return GomokuTeachingTip(
                 title: "观察电脑的选择",
-                message: "趁电脑思考时，猜一猜它为什么选那里：是在进攻，还是在挡住你的连子？",
+                message: "猜一猜电脑是在进攻，还是在挡住你的连子？",
                 skill: .observe,
                 symbol: "brain.head.profile"
             )
@@ -234,7 +234,7 @@ struct GomokuGame {
         case .playerWon:
             return GomokuTeachingTip(
                 title: "小冠军复盘",
-                message: "数一数获胜线上的黑子，再想想是哪一步让你获得了这个机会。",
+                message: "数一数获胜线上的黑子，想想哪一步带来了机会。",
                 skill: .count,
                 symbol: "graduationcap.fill"
             )
@@ -242,7 +242,7 @@ struct GomokuGame {
         case .botWon:
             return GomokuTeachingTip(
                 title: "从棋局中学习",
-                message: "回想一下：哪一步开始没有留意白子？下一局试着先观察对方的三子和四子。",
+                message: "找找哪一步没留意白子，下局先观察三子和四子。",
                 skill: .focus,
                 symbol: "lightbulb.fill"
             )
@@ -250,7 +250,7 @@ struct GomokuGame {
         case .draw:
             return GomokuTeachingTip(
                 title: "耐心完成棋局",
-                message: "这局没有分出胜负，也是一种练习。看看自己能不能找到三条不同的连线方向。",
+                message: "没有分出胜负也是练习，找找三种不同的连线方向。",
                 skill: .plan,
                 symbol: "equal.circle.fill"
             )
