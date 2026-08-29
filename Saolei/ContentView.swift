@@ -42,6 +42,33 @@ struct ContentView: View {
                         .frame(maxWidth: 900)
 
                         NavigationLink {
+                            GomokuView(difficulty: .beginner)
+                        } label: {
+                            GomokuEntryCard()
+                        }
+                        .buttonStyle(.plain)
+                        .frame(maxWidth: 900)
+
+                        Text("选择五子棋难度")
+                            .font(.system(size: 21, weight: .bold, design: .rounded))
+                            .foregroundStyle(SaoleiPalette.mutedInk)
+
+                        LazyVGrid(
+                            columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: proxy.size.width > 700 ? 3 : 1),
+                            spacing: 16
+                        ) {
+                            ForEach(GomokuDifficulty.allCases) { difficulty in
+                                NavigationLink {
+                                    GomokuView(difficulty: difficulty)
+                                } label: {
+                                    GomokuDifficultyCard(difficulty: difficulty)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .frame(maxWidth: 900)
+
+                        NavigationLink {
                             ChessView(difficulty: .beginner)
                         } label: {
                             ChessEntryCard()
@@ -114,7 +141,7 @@ struct ContentView: View {
                         }
                         .frame(maxWidth: 900)
 
-                        Text("扫雷、方块、算 24 点和牌桌，选一个开始挑战")
+                        Text("扫雷、方块、算 24 点、五子棋和牌桌，选一个开始挑战")
                             .font(.system(size: 16, weight: .medium, design: .rounded))
                             .foregroundStyle(SaoleiPalette.mutedInk)
                     }
@@ -142,9 +169,101 @@ struct ContentView: View {
                 .font(.system(size: 42, weight: .black, design: .rounded))
                 .foregroundStyle(SaoleiPalette.ink)
 
-            Text("动动脑筋，挑战扫雷、方块、算 24 点、国际象棋和德州扑克！")
+            Text("动动脑筋，挑战扫雷、方块、算 24 点、五子棋、国际象棋和德州扑克！")
                 .font(.system(size: 18, weight: .medium, design: .rounded))
                 .foregroundStyle(SaoleiPalette.mutedInk)
+        }
+    }
+}
+
+private struct GomokuEntryCard: View {
+    var body: some View {
+        HStack(spacing: 16) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(GomokuPalette.board.opacity(0.25))
+                    .frame(width: 70, height: 70)
+                Text("●○")
+                    .font(.system(size: 29, weight: .black, design: .rounded))
+                    .foregroundStyle(GomokuPalette.boardFrame)
+            }
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text("五子棋")
+                    .font(.system(size: 21, weight: .black, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.ink)
+                Text("黑方先手，连成五子，挑战不同强度的电脑")
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.mutedInk)
+            }
+
+            Spacer(minLength: 0)
+
+            Image(systemName: "arrow.right.circle.fill")
+                .font(.system(size: 25, weight: .bold))
+                .foregroundStyle(GomokuPalette.boardFrame)
+        }
+        .padding(16)
+        .background(SaoleiPalette.card)
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(GomokuPalette.board.opacity(0.72), lineWidth: 2)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .shadow(color: GomokuPalette.boardFrame.opacity(0.11), radius: 12, y: 6)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("五子棋，黑方先手，连成五子，挑战不同强度的电脑，开始游戏")
+    }
+}
+
+private struct GomokuDifficultyCard: View {
+    let difficulty: GomokuDifficulty
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(accentColor)
+                    .frame(width: 14, height: 14)
+                Text(difficulty.title)
+                    .font(.system(size: 20, weight: .black, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.ink)
+            }
+
+            Text(difficulty.subtitle)
+                .font(.system(size: 15, weight: .medium, design: .rounded))
+                .foregroundStyle(SaoleiPalette.mutedInk)
+                .lineLimit(2)
+
+            HStack {
+                Text("开始对弈")
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                Spacer()
+                Image(systemName: "arrow.right.circle.fill")
+                    .font(.system(size: 21, weight: .bold))
+            }
+            .foregroundStyle(accentColor)
+            .padding(.top, 8)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(20)
+        .background(SaoleiPalette.card)
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(accentColor.opacity(0.28), lineWidth: 2)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .shadow(color: GomokuPalette.boardFrame.opacity(0.10), radius: 12, y: 6)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("五子棋难度：\(difficulty.title)，\(difficulty.subtitle)，开始对弈")
+    }
+
+    private var accentColor: Color {
+        switch difficulty.accent {
+        case .mint: return SaoleiPalette.mint
+        case .sky: return SaoleiPalette.sky
+        case .orange: return SaoleiPalette.orange
+        case .purple: return SaoleiPalette.purple
         }
     }
 }
