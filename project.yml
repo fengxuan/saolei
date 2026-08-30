@@ -18,6 +18,8 @@ targets:
     platform: iOS
     sources:
       - path: Saolei
+    resources:
+      - path: Saolei/Assets.xcassets
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.jianfengxuan.saolei

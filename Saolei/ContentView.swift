@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 enum SaoleiPalette {
     static let background = Color(red: 0.95, green: 0.97, blue: 1.0)
@@ -88,11 +89,7 @@ struct ContentView: View {
     private var selectionHeader: some View {
         VStack(spacing: 12) {
             ZStack {
-                Circle()
-                    .fill(SaoleiPalette.blue)
-                    .frame(width: 82, height: 82)
-                Text("💣")
-                    .font(.system(size: 42))
+                AppIconImage()
             }
 
             Text("小小游戏乐园")
@@ -102,6 +99,23 @@ struct ContentView: View {
             Text("动动脑筋，挑战扫雷、方块、算 24 点、五子棋、国际象棋和德州扑克！")
                 .font(.system(size: 18, weight: .medium, design: .rounded))
                 .foregroundStyle(SaoleiPalette.mutedInk)
+        }
+    }
+}
+
+private struct AppIconImage: View {
+    var body: some View {
+        if let imagePath = Bundle.main.path(forResource: "AppIcon60x60@2x", ofType: "png"),
+           let uiImage = UIImage(contentsOfFile: imagePath) {
+            Image(uiImage: uiImage)
+                .resizable()
+                .scaledToFit()
+                .frame(width: 82, height: 82)
+                .accessibilityLabel("应用图标")
+        } else {
+            Color.clear
+                .frame(width: 82, height: 82)
+                .accessibilityLabel("应用图标")
         }
     }
 }

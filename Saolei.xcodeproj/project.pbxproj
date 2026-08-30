@@ -15,6 +15,7 @@
 		B847645EC0A2C57C437D76BC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FED3BF83CAFE725C816D903 /* ContentView.swift */; };
 		CC54972442AD5EDAAE2D2D22 /* ChessView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 953D4D27ABBDE86B54047855 /* ChessView.swift */; };
 		D0E2D8D18AAB7661A8413DD7 /* GameView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6B89D9088A77F03E3D619BF /* GameView.swift */; };
+		E7749F92464A5D582E29FDC2 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2395500EB9B72EA852EEB695 /* Assets.xcassets */; };
 		E2A7D2CB3F5F7D4C5D5B1A11 /* TetrisModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A7D2CB3F5F7D4C5D5B1A10 /* TetrisModel.swift */; };
 		E2A7D2CB3F5F7D4C5D5B1A13 /* TetrisView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2A7D2CB3F5F7D4C5D5B1A12 /* TetrisView.swift */; };
 		F24A00000000000000000001 /* TwentyFourModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = F24A00000000000000000003 /* TwentyFourModel.swift */; };
@@ -39,6 +40,7 @@
 		F24A00000000000000000004 /* TwentyFourView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwentyFourView.swift; sourceTree = "<group>"; };
 		F24A00000000000000000007 /* GomokuModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GomokuModel.swift; sourceTree = "<group>"; };
 		F24A00000000000000000008 /* GomokuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GomokuView.swift; sourceTree = "<group>"; };
+		2395500EB9B72EA852EEB695 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -61,6 +63,7 @@
 		F28EEF53CDDD36DFC72C940A /* Saolei */ = {
 			isa = PBXGroup;
 			children = (
+				2395500EB9B72EA852EEB695 /* Assets.xcassets */,
 				C6183062B08B596EFE54C878 /* ChessModel.swift */,
 				953D4D27ABBDE86B54047855 /* ChessView.swift */,
 				9FED3BF83CAFE725C816D903 /* ContentView.swift */,
@@ -87,6 +90,7 @@
 			buildConfigurationList = 3187D61E5DDCFAE7E0B2A873 /* Build configuration list for PBXNativeTarget "Saolei" */;
 			buildPhases = (
 				CBC879ADF580BA8DBB694181 /* Sources */,
+				E7B020A76ED29628BA0374B0 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -126,6 +130,17 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		E7B020A76ED29628BA0374B0 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E7749F92464A5D582E29FDC2 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		CBC879ADF580BA8DBB694181 /* Sources */ = {

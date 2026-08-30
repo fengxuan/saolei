@@ -22,6 +22,13 @@ struct TetrisView: View {
         }
         .navigationTitle("俄罗斯方块")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if horizontalSizeClass != .regular {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    resetButton(compact: true)
+                }
+            }
+        }
         .onReceive(timer) { _ in
             game.tick()
         }
@@ -56,20 +63,18 @@ struct TetrisView: View {
 
     private func phoneGameLayout(in proxy: GeometryProxy) -> some View {
         let isCompact = proxy.size.height < 700
-        let horizontalPadding: CGFloat = isCompact ? 12 : 20
+        let horizontalPadding: CGFloat = 12
         let verticalPadding: CGFloat = isCompact ? 6 : 10
         let spacing: CGFloat = isCompact ? 8 : 10
-        let boardReservation: CGFloat = isCompact ? 254 : 318
         let availableWidth = max(140, proxy.size.width - horizontalPadding * 2)
+        let boardReservation: CGFloat = isCompact ? 166 : 224
         let availableHeight = max(140, (proxy.size.height - boardReservation) / 2)
         let boardSide = min(420, availableWidth, availableHeight)
 
         return VStack(spacing: spacing) {
-            gameHeader(compact: isCompact)
             scoreCard(compact: isCompact)
             boardWithStatus(side: boardSide, compact: isCompact)
             controlPanel(compact: isCompact)
-            instructions(compact: isCompact)
         }
         .frame(maxWidth: 520)
         .frame(maxWidth: .infinity)
@@ -90,10 +95,8 @@ struct TetrisView: View {
                 .frame(maxWidth: .infinity, alignment: .top)
 
             VStack(spacing: 8) {
-                gameHeader(compact: true)
                 scoreCard(compact: true)
                 controlPanel(compact: true)
-                instructions(compact: true)
             }
             .frame(width: sidebarWidth)
         }
@@ -172,20 +175,24 @@ struct TetrisView: View {
 
             Spacer(minLength: 0)
 
-            Button {
-                game.reset()
-                fireImpact()
-            } label: {
-                Image(systemName: "arrow.clockwise")
-                    .font(.system(size: compact ? 16 : 18, weight: .bold))
-                    .foregroundStyle(SaoleiPalette.blueDeep)
-                    .frame(width: compact ? 36 : 42, height: compact ? 36 : 42)
-                    .background(SaoleiPalette.card)
-                    .clipShape(Circle())
-                    .shadow(color: SaoleiPalette.blue.opacity(0.12), radius: 8, y: 4)
-            }
-            .accessibilityLabel("重新开始")
+            resetButton(compact: compact)
         }
+    }
+
+    private func resetButton(compact: Bool = false) -> some View {
+        Button {
+            game.reset()
+            fireImpact()
+        } label: {
+            Image(systemName: "arrow.clockwise")
+                .font(.system(size: compact ? 16 : 18, weight: .bold))
+                .foregroundStyle(SaoleiPalette.blueDeep)
+                .frame(width: compact ? 36 : 42, height: compact ? 36 : 42)
+                .background(SaoleiPalette.card)
+                .clipShape(Circle())
+                .shadow(color: SaoleiPalette.blue.opacity(0.12), radius: 8, y: 4)
+        }
+        .accessibilityLabel("重新开始")
     }
 
     private func scoreCard(compact: Bool = false) -> some View {
@@ -249,7 +256,7 @@ struct TetrisView: View {
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         .shadow(color: SaoleiPalette.blueDeep.opacity(0.25), radius: 15, y: 9)
         .contentShape(Rectangle())
-        .gesture(boardGesture)
+        .gesture(boardGesture())
         .onTapGesture {
             guard game.isPlaying else { return }
             game.rotate()
@@ -280,7 +287,7 @@ struct TetrisView: View {
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         .shadow(color: SaoleiPalette.blueDeep.opacity(0.25), radius: 15, y: 9)
         .contentShape(Rectangle())
-        .gesture(boardGesture)
+        .gesture(boardGesture())
         .onTapGesture {
             guard game.isPlaying else { return }
             game.rotate()
@@ -290,12 +297,13 @@ struct TetrisView: View {
         .accessibilityLabel("俄罗斯方块游戏棋盘")
     }
 
-    private var boardGesture: some Gesture {
+    private func boardGesture() -> some Gesture {
         DragGesture(minimumDistance: 12)
             .onEnded { value in
                 guard game.isPlaying else { return }
 
                 let translation = value.translation
+                var didAct = false
                 if abs(translation.width) > abs(translation.height) {
                     let moves = max(1, min(4, Int(abs(translation.width) / 24)))
                     for _ in 0..<moves {
@@ -305,12 +313,17 @@ struct TetrisView: View {
                             game.moveLeft()
                         }
                     }
+                    didAct = true
                 } else if translation.height > 0 {
                     game.softDrop()
+                    didAct = true
                 } else {
                     game.hardDrop()
+                    didAct = true
                 }
-                fireImpact()
+                if didAct {
+                    fireImpact()
+                }
             }
     }
 
