@@ -4,6 +4,8 @@ import UIKit
 struct GameView: View {
     let difficulty: GameDifficulty
 
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var game: MinesweeperGame
     @State private var flagMode = false
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -26,7 +28,91 @@ struct GameView: View {
         .onReceive(timer) { _ in game.tick() }
     }
 
+    @ViewBuilder
     private func gameLayout(in proxy: GeometryProxy) -> some View {
+        if proxy.size.width > proxy.size.height && horizontalSizeClass != .regular {
+            landscapePhoneLayout(in: proxy)
+        } else {
+            standardLayout(in: proxy)
+        }
+    }
+
+    private func landscapePhoneLayout(in proxy: GeometryProxy) -> some View {
+        let horizontalPadding: CGFloat = 12
+        let verticalPadding: CGFloat = 4
+        let headerHeight: CGFloat = 36
+        let contentSpacing: CGFloat = 8
+        let availableWidth = max(1, proxy.size.width - horizontalPadding * 2)
+        let sidebarWidth = min(280, max(238, availableWidth * 0.34))
+        let boardOuterInset: CGFloat = 20
+        let availableHeight = max(1, proxy.size.height - headerHeight - verticalPadding * 2)
+        let maxGridSide = availableWidth - sidebarWidth - contentSpacing - boardOuterInset
+        let boardSide = max(1, min(760, availableHeight - boardOuterInset, maxGridSide))
+
+        return VStack(spacing: 4) {
+            phoneLandscapeHeader
+
+            HStack(alignment: .top, spacing: contentSpacing) {
+                gameBoard(side: boardSide)
+                    .layoutPriority(1)
+
+                VStack(spacing: 8) {
+                    statusCard
+                    boardToolbar
+                }
+                .frame(width: sidebarWidth, alignment: .top)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+        .frame(maxWidth: 1_100, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.horizontal, horizontalPadding)
+        .padding(.vertical, verticalPadding)
+        .navigationBarHidden(true)
+    }
+
+    private var phoneLandscapeHeader: some View {
+        HStack(spacing: 7) {
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(SaoleiPalette.ink)
+                    .frame(width: 28, height: 28)
+                    .background(SaoleiPalette.card)
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .frame(width: 36, height: 36)
+            .accessibilityLabel("返回")
+
+            VStack(alignment: .leading, spacing: 0) {
+                Text("小小扫雷队")
+                    .font(.system(size: 17, weight: .black, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.ink)
+                Text(difficulty.title)
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(accentColor)
+            }
+
+            Spacer(minLength: 4)
+
+            HStack(spacing: 6) {
+                Text("雷 \(game.remainingMines)")
+                Text(formattedTime)
+            }
+            .font(.system(size: 10, weight: .bold, design: .rounded))
+            .foregroundStyle(SaoleiPalette.mutedInk)
+        }
+        .lineLimit(1)
+        .minimumScaleFactor(0.72)
+        .padding(.horizontal, 4)
+        .frame(height: 36)
+        .background(SaoleiPalette.card)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private func standardLayout(in proxy: GeometryProxy) -> some View {
         let boardSide = min(
             760,
             proxy.size.width - 48,
@@ -130,7 +216,7 @@ struct GameView: View {
 
     private func gameBoard(side: CGFloat) -> some View {
         let gap = CGFloat(max(game.difficulty.columns - 1, 0) * 4)
-        let cellSide = max(20, (side - 20 - gap) / CGFloat(game.difficulty.columns))
+        let cellSide = max(1, (side - 20 - gap) / CGFloat(game.difficulty.columns))
 
         return LazyVGrid(
             columns: Array(repeating: GridItem(.fixed(cellSide), spacing: 4), count: game.difficulty.columns),

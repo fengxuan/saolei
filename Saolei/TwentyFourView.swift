@@ -2,10 +2,12 @@ import SwiftUI
 import UIKit
 
 struct TwentyFourView: View {
+    @Environment(\.dismiss) private var dismiss
     @State private var game = TwentyFourGame()
     @State private var firstSelection: Int?
     @State private var selectedOperation: TwentyFourOperation?
     @State private var errorMessage: String?
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -14,10 +16,14 @@ struct TwentyFourView: View {
             SaoleiPalette.background.ignoresSafeArea()
 
             GeometryReader { proxy in
-                ScrollView {
-                    if proxy.size.width >= 700 {
+                if usesIPadLayout(for: proxy.size) {
+                    ScrollView {
                         iPadLayout
-                    } else {
+                    }
+                } else if proxy.size.width > proxy.size.height {
+                    landscapePhoneLayout(in: proxy)
+                } else {
+                    ScrollView {
                         phoneLayout
                     }
                 }
@@ -34,11 +40,11 @@ struct TwentyFourView: View {
         VStack(spacing: 16) {
             gameHeader
             statusCard
-            numbersCard
-            operationCard
+            numbersCard()
+            operationCard()
 
             if !game.steps.isEmpty {
-                stepsCard
+                stepsCard()
             }
 
             rulesCard
@@ -50,6 +56,86 @@ struct TwentyFourView: View {
         .padding(.vertical, 18)
     }
 
+    private func landscapePhoneLayout(in proxy: GeometryProxy) -> some View {
+        let horizontalPadding: CGFloat = 12
+        let verticalPadding: CGFloat = 4
+        let contentSpacing: CGFloat = 8
+        let availableWidth = max(1, proxy.size.width - horizontalPadding * 2)
+        let sidebarWidth = min(280, max(238, availableWidth * 0.32))
+        let primaryWidth = max(1, availableWidth - sidebarWidth - contentSpacing)
+
+        return VStack(spacing: 4) {
+            phoneLandscapeHeader
+
+            HStack(alignment: .top, spacing: contentSpacing) {
+                VStack(spacing: 6) {
+                    numbersCard(compact: true)
+                    operationCard(compact: true)
+
+                    if !game.steps.isEmpty {
+                        stepsCard(compact: true)
+                    }
+                }
+                .frame(width: primaryWidth, alignment: .top)
+
+                VStack(spacing: 8) {
+                    statusCard
+                    answerSection
+                }
+                .frame(width: sidebarWidth, alignment: .top)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+        .frame(maxWidth: 1_100, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.horizontal, horizontalPadding)
+        .padding(.vertical, verticalPadding)
+        .navigationBarHidden(true)
+    }
+
+    private var phoneLandscapeHeader: some View {
+        HStack(spacing: 7) {
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(SaoleiPalette.ink)
+                    .frame(width: 28, height: 28)
+                    .background(SaoleiPalette.card)
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .frame(width: 36, height: 36)
+            .accessibilityLabel("返回")
+
+            VStack(alignment: .leading, spacing: 0) {
+                Text("算 24 点")
+                    .font(.system(size: 17, weight: .black, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.ink)
+                Text("一步一步合并数字，算出 24")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.orange)
+            }
+
+            Spacer(minLength: 4)
+
+            Text(statusTitle)
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .foregroundStyle(statusTint)
+                .lineLimit(1)
+        }
+        .lineLimit(1)
+        .minimumScaleFactor(0.72)
+        .padding(.horizontal, 4)
+        .frame(height: 36)
+        .background(SaoleiPalette.card)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private func usesIPadLayout(for size: CGSize) -> Bool {
+        horizontalSizeClass == .regular || (size.width >= 700 && size.height >= 600)
+    }
+
     private var iPadLayout: some View {
         VStack(spacing: 14) {
             gameHeader
@@ -57,11 +143,11 @@ struct TwentyFourView: View {
             HStack(alignment: .top, spacing: 16) {
                 VStack(spacing: 14) {
                     statusCard
-                    numbersCard
-                    operationCard
+                    numbersCard()
+                    operationCard()
 
                     if !game.steps.isEmpty {
-                        stepsCard
+                        stepsCard()
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .top)
@@ -133,29 +219,32 @@ struct TwentyFourView: View {
         .shadow(color: SaoleiPalette.orange.opacity(0.10), radius: 12, y: 6)
     }
 
-    private var numbersCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
+    private func numbersCard(compact: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: compact ? 6 : 14) {
             HStack {
                 Text(game.isComplete ? "最终结果" : "本题数字")
-                    .font(.system(size: 20, weight: .black, design: .rounded))
+                    .font(.system(size: compact ? 18 : 20, weight: .black, design: .rounded))
                     .foregroundStyle(SaoleiPalette.ink)
                 Spacer()
                 Text(game.isComplete ? "可以回退检查" : "每个数字用一次")
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .font(.system(size: compact ? 11 : 14, weight: .semibold, design: .rounded))
                     .foregroundStyle(SaoleiPalette.mutedInk)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
 
-            HStack(spacing: 10) {
+            HStack(spacing: compact ? 6 : 10) {
                 ForEach(Array(game.items.enumerated()), id: \.element.id) { index, item in
                     CalculatorNumberCard(
                         item: item,
                         isSelected: firstSelection == index,
+                        compact: compact,
                         action: { selectNumber(at: index) }
                     )
                 }
             }
         }
-        .padding(18)
+        .padding(compact ? 10 : 18)
         .background(SaoleiPalette.card)
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         .shadow(color: SaoleiPalette.orange.opacity(0.10), radius: 12, y: 6)
@@ -163,30 +252,31 @@ struct TwentyFourView: View {
         .accessibilityLabel("当前数字：\(game.items.map(\.displayText).joined(separator: "、"))")
     }
 
-    private var operationCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
+    private func operationCard(compact: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: compact ? 6 : 14) {
             HStack {
                 Text("选择运算")
-                    .font(.system(size: 20, weight: .black, design: .rounded))
+                    .font(.system(size: compact ? 18 : 20, weight: .black, design: .rounded))
                     .foregroundStyle(SaoleiPalette.ink)
                 Spacer()
                 Button {
                     undoLastStep()
                 } label: {
                     Label("回退一步", systemImage: "arrow.uturn.backward")
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .font(.system(size: compact ? 11 : 14, weight: .bold, design: .rounded))
                         .foregroundStyle(game.canUndo ? SaoleiPalette.blueDeep : SaoleiPalette.mutedInk)
                 }
                 .disabled(!game.canUndo)
                 .accessibilityIdentifier("twentyFourUndoButton")
             }
 
-            HStack(spacing: 10) {
+            HStack(spacing: compact ? 6 : 10) {
                 ForEach(TwentyFourOperation.allCases) { operation in
                     OperationButton(
                         operation: operation,
                         isSelected: selectedOperation == operation,
                         isEnabled: firstSelection != nil && !game.isComplete,
+                        compact: compact,
                         action: { selectOperation(operation) }
                     )
                 }
@@ -194,44 +284,44 @@ struct TwentyFourView: View {
 
             if let errorMessage {
                 Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
-                    .font(.system(size: 14, weight: .semibold, design: .rounded))
+                    .font(.system(size: compact ? 11 : 14, weight: .semibold, design: .rounded))
                     .foregroundStyle(SaoleiPalette.orange)
-            } else {
+            } else if !compact {
                 Label(interactionHint, systemImage: selectedOperation == nil ? "hand.tap.fill" : "arrow.right")
                     .font(.system(size: 14, weight: .semibold, design: .rounded))
                     .foregroundStyle(SaoleiPalette.mutedInk)
             }
         }
-        .padding(18)
+        .padding(compact ? 10 : 18)
         .background(SaoleiPalette.card)
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         .shadow(color: SaoleiPalette.orange.opacity(0.10), radius: 12, y: 6)
     }
 
-    private var stepsCard: some View {
-        VStack(alignment: .leading, spacing: 11) {
+    private func stepsCard(compact: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: compact ? 5 : 11) {
             Label("你的计算过程", systemImage: "list.number")
-                .font(.system(size: 18, weight: .black, design: .rounded))
+                .font(.system(size: compact ? 15 : 18, weight: .black, design: .rounded))
                 .foregroundStyle(SaoleiPalette.blueDeep)
 
             ForEach(Array(game.steps.enumerated()), id: \.offset) { index, step in
-                HStack(alignment: .top, spacing: 10) {
+                HStack(alignment: .top, spacing: compact ? 7 : 10) {
                     Text("\(index + 1)")
-                        .font(.system(size: 13, weight: .black, design: .rounded))
+                        .font(.system(size: compact ? 11 : 13, weight: .black, design: .rounded))
                         .foregroundStyle(.white)
-                        .frame(width: 23, height: 23)
+                        .frame(width: compact ? 19 : 23, height: compact ? 19 : 23)
                         .background(SaoleiPalette.blue)
                         .clipShape(Circle())
 
                     Text(step)
-                        .font(.system(size: 16, weight: .bold, design: .rounded))
+                        .font(.system(size: compact ? 13 : 16, weight: .bold, design: .rounded))
                         .foregroundStyle(SaoleiPalette.ink)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
+        .padding(compact ? 10 : 18)
         .background(SaoleiPalette.blue.opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
     }
@@ -420,27 +510,28 @@ struct TwentyFourView: View {
 private struct CalculatorNumberCard: View {
     let item: TwentyFourItem
     let isSelected: Bool
+    let compact: Bool
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             VStack(spacing: 2) {
                 Text(item.displayText)
-                    .font(.system(size: 34, weight: .black, design: .rounded))
+                    .font(.system(size: compact ? 26 : 34, weight: .black, design: .rounded))
                     .foregroundStyle(isSelected ? SaoleiPalette.blueDeep : SaoleiPalette.orange)
                     .minimumScaleFactor(0.60)
                     .lineLimit(1)
 
                 if item.isCalculated {
                     Text(item.expression)
-                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .font(.system(size: compact ? 9 : 10, weight: .semibold, design: .rounded))
                         .foregroundStyle(SaoleiPalette.mutedInk)
                         .lineLimit(2)
                         .minimumScaleFactor(0.55)
                 }
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 112)
+            .frame(height: compact ? 64 : 112)
             .background(isSelected ? SaoleiPalette.blue.opacity(0.13) : SaoleiPalette.orange.opacity(0.11))
             .overlay {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -461,15 +552,16 @@ private struct OperationButton: View {
     let operation: TwentyFourOperation
     let isSelected: Bool
     let isEnabled: Bool
+    let compact: Bool
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             Text(operation.symbol)
-                .font(.system(size: 27, weight: .black, design: .rounded))
+                .font(.system(size: compact ? 22 : 27, weight: .black, design: .rounded))
                 .foregroundStyle(isSelected ? .white : SaoleiPalette.orange)
                 .frame(maxWidth: .infinity)
-                .frame(height: 54)
+                .frame(height: compact ? 42 : 54)
                 .background(isSelected ? SaoleiPalette.orange : SaoleiPalette.orange.opacity(0.10))
                 .overlay {
                     RoundedRectangle(cornerRadius: 15, style: .continuous)

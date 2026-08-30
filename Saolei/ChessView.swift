@@ -14,6 +14,7 @@ enum ChessPalette {
 struct ChessView: View {
     let difficulty: ChessDifficulty
 
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var game: ChessGame
     @State private var selectedSquare: ChessSquare?
@@ -35,7 +36,9 @@ struct ChessView: View {
             ChessPalette.background.ignoresSafeArea()
 
             GeometryReader { proxy in
-                if horizontalSizeClass == .regular {
+                if proxy.size.width > proxy.size.height && proxy.size.height < 600 {
+                    landscapePhoneLayout(size: proxy.size)
+                } else if horizontalSizeClass == .regular {
                     if proxy.size.width > proxy.size.height {
                         if canUseLandscapeSplitLayout(size: proxy.size) {
                             iPadLandscapeLayout(size: proxy.size)
@@ -69,6 +72,84 @@ struct ChessView: View {
         }
     }
 
+    private func landscapePhoneLayout(size: CGSize) -> some View {
+        let horizontalPadding: CGFloat = 12
+        let verticalPadding: CGFloat = 4
+        let headerHeight: CGFloat = 36
+        let contentSpacing: CGFloat = 8
+        let availableWidth = max(1, size.width - horizontalPadding * 2)
+        let sidebarWidth = min(280, max(238, availableWidth * 0.34))
+        let boardOuterInset: CGFloat = 16
+        let availableHeight = max(1, size.height - headerHeight - verticalPadding * 2)
+        let maxBoardSide = availableWidth - sidebarWidth - contentSpacing - boardOuterInset
+        let boardSide = max(1, min(720, availableHeight - boardOuterInset, maxBoardSide))
+
+        return VStack(spacing: 4) {
+            phoneLandscapeHeader
+
+            HStack(alignment: .top, spacing: contentSpacing) {
+                chessBoard(side: boardSide)
+                    .layoutPriority(1)
+
+                VStack(spacing: 8) {
+                    statusCard
+                    controlsCard
+
+                    HStack(spacing: 8) {
+                        undoButton
+                        restartButton
+                    }
+                }
+                .frame(width: sidebarWidth, alignment: .top)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+        .frame(maxWidth: 1_100, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.horizontal, horizontalPadding)
+        .padding(.vertical, verticalPadding)
+        .navigationBarHidden(true)
+    }
+
+    private var phoneLandscapeHeader: some View {
+        HStack(spacing: 7) {
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(SaoleiPalette.ink)
+                    .frame(width: 28, height: 28)
+                    .background(SaoleiPalette.card)
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .frame(width: 36, height: 36)
+            .accessibilityLabel("返回")
+
+            VStack(alignment: .leading, spacing: 0) {
+                Text("国际象棋")
+                    .font(.system(size: 17, weight: .black, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.ink)
+                Text("人机对战 · \(difficulty.title)")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(accentColor)
+            }
+
+            Spacer(minLength: 4)
+
+            Text("第 \((game.moveCount + 1) / 2) 回合")
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .foregroundStyle(ChessPalette.boardFrame)
+                .lineLimit(1)
+        }
+        .lineLimit(1)
+        .minimumScaleFactor(0.72)
+        .padding(.horizontal, 4)
+        .frame(height: 36)
+        .background(SaoleiPalette.card)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
     private func canUseLandscapeSplitLayout(size: CGSize) -> Bool {
         let horizontalPadding = min(30, max(18, size.width * 0.025))
         let availableWidth = size.width - horizontalPadding * 2
@@ -83,35 +164,26 @@ struct ChessView: View {
         let availableWidth = size.width - horizontalPadding * 2
         let sidebarWidth = min(300, max(250, availableWidth * 0.27))
         let maxBoardSide = availableWidth - sidebarWidth - 16
-        let boardSide = min(720, min(maxBoardSide, size.height - 112))
+        let boardSide = max(1, min(720, maxBoardSide, size.height - 16))
 
-        return ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: 10) {
-                pageHeader
+        return HStack(alignment: .top, spacing: 16) {
+            chessBoard(side: boardSide)
+                .layoutPriority(1)
 
-                HStack(alignment: .top, spacing: 16) {
-                    VStack(spacing: 10) {
-                        chessBoard(side: boardSide)
-                        rulesCard
-                    }
-                    .frame(width: boardSide, alignment: .top)
-
-                    VStack(spacing: 12) {
-                        statusCard
-                        controlsCard
-                        HStack(spacing: 10) {
-                            undoButton
-                            restartButton
-                        }
-                    }
-                    .frame(width: sidebarWidth, alignment: .top)
+            VStack(spacing: 12) {
+                landscapePageHeader
+                statusCard
+                controlsCard
+                HStack(spacing: 10) {
+                    undoButton
+                    restartButton
                 }
             }
-            .frame(maxWidth: 1_260, alignment: .top)
-            .frame(maxWidth: .infinity, alignment: .top)
-            .padding(.horizontal, horizontalPadding)
-            .padding(.vertical, 10)
+            .frame(width: sidebarWidth, alignment: .top)
         }
+        .frame(maxWidth: 1_260, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.horizontal, horizontalPadding)
+        .padding(.vertical, 8)
     }
 
     private func iPadPortraitLayout(size: CGSize) -> some View {
@@ -201,6 +273,44 @@ struct ChessView: View {
             .padding(.vertical, 9)
             .background(ChessPalette.gold.opacity(0.22))
             .clipShape(Capsule())
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var landscapePageHeader: some View {
+        HStack(alignment: .center, spacing: 8) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .fill(ChessPalette.boardFrame)
+                    .frame(width: 40, height: 40)
+                Text("♔")
+                    .font(.system(size: 25, design: .serif))
+                    .foregroundStyle(.white)
+            }
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text("国际象棋")
+                    .font(.system(size: 18, weight: .black, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.ink)
+                    .lineLimit(1)
+                Text("人机对战 · \(difficulty.title)")
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundStyle(accentColor)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+
+            Spacer(minLength: 0)
+
+            Text("第 \((game.moveCount + 1) / 2) 回合")
+                .font(.system(size: 11, weight: .bold, design: .rounded))
+                .foregroundStyle(ChessPalette.boardFrame)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .background(ChessPalette.gold.opacity(0.22))
+                .clipShape(Capsule())
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

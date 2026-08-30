@@ -14,6 +14,8 @@ enum GomokuPalette {
 struct GomokuView: View {
     let difficulty: GomokuDifficulty
 
+    @Environment(\.dismiss) private var dismiss
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @State private var game: GomokuGame
     @State private var botTurnID = UUID()
 
@@ -39,7 +41,9 @@ struct GomokuView: View {
 
     @ViewBuilder
     private func gameLayout(in proxy: GeometryProxy) -> some View {
-        if proxy.size.width > proxy.size.height {
+        if proxy.size.width > proxy.size.height && horizontalSizeClass != .regular {
+            phoneLandscapeLayout(in: proxy)
+        } else if proxy.size.width > proxy.size.height {
             landscapeLayout(in: proxy)
         } else {
             portraitLayout(in: proxy)
@@ -88,6 +92,80 @@ struct GomokuView: View {
         .frame(maxWidth: 1100, maxHeight: .infinity, alignment: .center)
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
+    }
+
+    private func phoneLandscapeLayout(in proxy: GeometryProxy) -> some View {
+        let horizontalPadding: CGFloat = 12
+        let verticalPadding: CGFloat = 4
+        let headerHeight: CGFloat = 36
+        let contentSpacing: CGFloat = 8
+        let availableWidth = max(1, proxy.size.width - horizontalPadding * 2)
+        let sidebarWidth = min(280, max(238, availableWidth * 0.32))
+        let boardOuterInset: CGFloat = 20
+        let availableHeight = max(1, proxy.size.height - headerHeight - verticalPadding * 2)
+        let maxBoardSide = availableWidth - sidebarWidth - contentSpacing - boardOuterInset
+        let boardSide = max(1, min(720, availableHeight - boardOuterInset, maxBoardSide))
+
+        return VStack(spacing: 4) {
+            phoneLandscapeHeader
+
+            HStack(alignment: .top, spacing: contentSpacing) {
+                gameBoard(side: boardSide)
+                    .layoutPriority(1)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    landscapeStatusCard
+                    teachingCard
+                    restartButton
+                }
+                .frame(width: sidebarWidth, alignment: .top)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+        .frame(maxWidth: 1_100, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.horizontal, horizontalPadding)
+        .padding(.vertical, verticalPadding)
+        .navigationBarHidden(true)
+    }
+
+    private var phoneLandscapeHeader: some View {
+        HStack(spacing: 7) {
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(SaoleiPalette.ink)
+                    .frame(width: 28, height: 28)
+                    .background(SaoleiPalette.card)
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .frame(width: 36, height: 36)
+            .accessibilityLabel("返回")
+
+            VStack(alignment: .leading, spacing: 0) {
+                Text("五子棋")
+                    .font(.system(size: 17, weight: .black, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.ink)
+                Text("人机对战 · \(difficulty.title)")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(accentColor)
+            }
+
+            Spacer(minLength: 4)
+
+            Text("第 \(game.moveCount + 1) 手")
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .foregroundStyle(GomokuPalette.boardFrame)
+                .lineLimit(1)
+        }
+        .lineLimit(1)
+        .minimumScaleFactor(0.72)
+        .padding(.horizontal, 4)
+        .frame(height: 36)
+        .background(SaoleiPalette.card)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     private var pageHeader: some View {

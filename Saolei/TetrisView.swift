@@ -3,6 +3,7 @@ import UIKit
 
 struct TetrisView: View {
     @State private var game = TetrisGame()
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     private let timer = Timer.publish(every: 0.55, on: .main, in: .common).autoconnect()
 
@@ -68,12 +69,11 @@ struct TetrisView: View {
         let spacing: CGFloat = isCompact ? 8 : 10
         let availableWidth = max(140, proxy.size.width - horizontalPadding * 2)
         let boardReservation: CGFloat = isCompact ? 166 : 224
-        let availableHeight = max(140, (proxy.size.height - boardReservation) / 2)
-        let boardSide = min(420, availableWidth, availableHeight)
+        let boardHeight = max(280, proxy.size.height - boardReservation)
 
         return VStack(spacing: spacing) {
             scoreCard(compact: isCompact)
-            boardWithStatus(side: boardSide, compact: isCompact)
+            boardWithStatus(width: availableWidth, height: boardHeight, compact: isCompact)
             controlPanel(compact: isCompact)
         }
         .frame(maxWidth: 520)
@@ -84,26 +84,75 @@ struct TetrisView: View {
 
     private func widePhoneGameLayout(in proxy: GeometryProxy) -> some View {
         let horizontalPadding: CGFloat = 12
+        let verticalPadding: CGFloat = 4
+        let headerHeight: CGFloat = 36
         let contentSpacing: CGFloat = 12
         let sidebarWidth = min(250, max(220, proxy.size.width * 0.32))
         let boardWidth = proxy.size.width - horizontalPadding * 2 - contentSpacing - sidebarWidth
-        let boardHeight = max(140, (proxy.size.height - 24) / 2)
-        let boardSide = min(260, boardWidth, boardHeight)
+        let availableHeight = max(1, proxy.size.height - headerHeight - verticalPadding * 2)
+        let boardSide = max(1, min(260, boardWidth, availableHeight / 2))
 
-        return HStack(alignment: .top, spacing: contentSpacing) {
-            boardWithStatus(side: boardSide, compact: true)
-                .frame(maxWidth: .infinity, alignment: .top)
+        return VStack(spacing: 4) {
+            phoneLandscapeHeader
 
-            VStack(spacing: 8) {
-                scoreCard(compact: true)
-                controlPanel(compact: true)
+            HStack(alignment: .top, spacing: contentSpacing) {
+                boardWithStatus(side: boardSide, compact: true)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+
+                VStack(spacing: 8) {
+                    scoreCard(compact: true)
+                    controlPanel(compact: true)
+                }
+                .frame(width: sidebarWidth, alignment: .top)
             }
-            .frame(width: sidebarWidth)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .frame(maxWidth: 760)
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: 1_100, maxHeight: .infinity, alignment: .topLeading)
         .padding(.horizontal, horizontalPadding)
-        .padding(.vertical, 12)
+        .padding(.vertical, verticalPadding)
+        .navigationBarHidden(true)
+    }
+
+    private var phoneLandscapeHeader: some View {
+        HStack(spacing: 7) {
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(SaoleiPalette.ink)
+                    .frame(width: 28, height: 28)
+                    .background(SaoleiPalette.card)
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .frame(width: 36, height: 36)
+            .accessibilityLabel("返回")
+
+            VStack(alignment: .leading, spacing: 0) {
+                Text("俄罗斯方块")
+                    .font(.system(size: 17, weight: .black, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.ink)
+                Text("拼满一行，方块就会消失！")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.mutedInk)
+            }
+
+            Spacer(minLength: 4)
+
+            HStack(spacing: 6) {
+                Text("分数 \(game.score)")
+                Text("消除 \(game.clearedLines)")
+            }
+            .font(.system(size: 10, weight: .bold, design: .rounded))
+            .foregroundStyle(SaoleiPalette.mutedInk)
+        }
+        .lineLimit(1)
+        .minimumScaleFactor(0.72)
+        .padding(.horizontal, 4)
+        .frame(height: 36)
+        .background(SaoleiPalette.card)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
     private func iPadLandscapeGameLayout(in proxy: GeometryProxy) -> some View {
