@@ -271,13 +271,14 @@ struct PokerView: View {
 
             if showsInlineStats {
                 HStack(spacing: 6) {
-                    Text("你 \(game.playerChips)")
-                    Text("机 \(game.botChips)")
-                    Text("池 \(game.pot)")
+                    PokerInlineStatView(label: "你", value: String(game.playerChips), tint: SaoleiPalette.blue)
+                    PokerInlineStatView(label: "机", value: String(game.botChips), tint: SaoleiPalette.purple)
+                    PokerInlineStatView(label: "池", value: String(game.pot), tint: PokerPalette.gold)
                     Text("#\(game.handNumber)")
+                        .font(.system(size: 10, weight: .bold, design: .rounded))
+                        .foregroundStyle(PokerPalette.mutedInk)
                 }
-                .font(.system(size: 9, weight: .bold, design: .rounded))
-                .foregroundStyle(PokerPalette.mutedInk)
+                .fixedSize(horizontal: true, vertical: false)
             }
         }
         .lineLimit(1)
@@ -891,6 +892,31 @@ private struct PokerStatView: View {
                 .minimumScaleFactor(0.65)
         }
         .frame(maxWidth: .infinity)
+    }
+}
+
+private struct PokerInlineStatView: View {
+    let label: String
+    let value: String
+    let tint: Color
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text(label)
+                .font(.system(size: 9, weight: .bold, design: .rounded))
+                .foregroundStyle(PokerPalette.mutedInk)
+            Text(value)
+                .font(.system(size: 13, weight: .black, design: .rounded))
+                .foregroundStyle(tint)
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.68)
+        }
+        .frame(minWidth: 36)
+        .padding(.horizontal, 4)
+        .padding(.vertical, 3)
+        .background(tint.opacity(0.12))
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
 
