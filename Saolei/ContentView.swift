@@ -20,136 +20,66 @@ struct ContentView: View {
         ZStack {
             SaoleiPalette.background.ignoresSafeArea()
 
-            GeometryReader { proxy in
-                ScrollView {
-                    VStack(spacing: 24) {
-                        selectionHeader
+            ScrollView {
+                VStack(spacing: 24) {
+                    selectionHeader
 
-                        NavigationLink {
-                            TetrisView()
-                        } label: {
-                            TetrisEntryCard()
-                        }
-                        .buttonStyle(.plain)
-                        .frame(maxWidth: 900)
-
-                        NavigationLink {
-                            TwentyFourView()
-                        } label: {
-                            TwentyFourEntryCard()
-                        }
-                        .buttonStyle(.plain)
-                        .frame(maxWidth: 900)
-
-                        NavigationLink {
-                            GomokuView(difficulty: .beginner)
-                        } label: {
-                            GomokuEntryCard()
-                        }
-                        .buttonStyle(.plain)
-                        .frame(maxWidth: 900)
-
-                        Text("选择五子棋难度")
-                            .font(.system(size: 21, weight: .bold, design: .rounded))
-                            .foregroundStyle(SaoleiPalette.mutedInk)
-
-                        LazyVGrid(
-                            columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: proxy.size.width > 700 ? 3 : 1),
-                            spacing: 16
-                        ) {
-                            ForEach(GomokuDifficulty.allCases) { difficulty in
-                                NavigationLink {
-                                    GomokuView(difficulty: difficulty)
-                                } label: {
-                                    GomokuDifficultyCard(difficulty: difficulty)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .frame(maxWidth: 900)
-
-                        NavigationLink {
-                            ChessView(difficulty: .beginner)
-                        } label: {
-                            ChessEntryCard()
-                        }
-                        .buttonStyle(.plain)
-                        .frame(maxWidth: 900)
-
-                        Text("选择国际象棋等级")
-                            .font(.system(size: 21, weight: .bold, design: .rounded))
-                            .foregroundStyle(SaoleiPalette.mutedInk)
-
-                        LazyVGrid(
-                            columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: proxy.size.width > 700 ? 3 : 1),
-                            spacing: 16
-                        ) {
-                            ForEach(ChessDifficulty.allCases) { difficulty in
-                                NavigationLink {
-                                    ChessView(difficulty: difficulty)
-                                } label: {
-                                    ChessDifficultyCard(difficulty: difficulty)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .frame(maxWidth: 900)
-
-                        NavigationLink {
-                            PokerView(difficulty: .casual)
-                        } label: {
-                            PokerEntryCard()
-                        }
-                        .buttonStyle(.plain)
-                        .frame(maxWidth: 900)
-
-                        Text("选择扫雷难度")
-                            .font(.system(size: 21, weight: .bold, design: .rounded))
-                            .foregroundStyle(SaoleiPalette.mutedInk)
-
-                        LazyVGrid(
-                            columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: proxy.size.width > 700 ? 4 : 2),
-                            spacing: 16
-                        ) {
-                            ForEach(GameDifficulty.allCases) { difficulty in
-                                NavigationLink {
-                                    GameView(difficulty: difficulty)
-                                } label: {
-                                    DifficultyCard(difficulty: difficulty)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .frame(maxWidth: 900)
-
-                        Text("选择德州扑克难度")
-                            .font(.system(size: 21, weight: .bold, design: .rounded))
-                            .foregroundStyle(SaoleiPalette.mutedInk)
-
-                        LazyVGrid(
-                            columns: Array(repeating: GridItem(.flexible(), spacing: 16), count: proxy.size.width > 700 ? 3 : 1),
-                            spacing: 16
-                        ) {
-                            ForEach(PokerDifficulty.allCases) { difficulty in
-                                NavigationLink {
-                                    PokerView(difficulty: difficulty)
-                                } label: {
-                                    PokerDifficultyCard(difficulty: difficulty)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .frame(maxWidth: 900)
-
-                        Text("扫雷、方块、算 24 点、五子棋和牌桌，选一个开始挑战")
-                            .font(.system(size: 16, weight: .medium, design: .rounded))
-                            .foregroundStyle(SaoleiPalette.mutedInk)
+                    NavigationLink {
+                        TetrisView()
+                    } label: {
+                        TetrisEntryCard()
                     }
+                    .buttonStyle(.plain)
                     .frame(maxWidth: 900)
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 24)
+
+                    NavigationLink {
+                        TwentyFourView()
+                    } label: {
+                        TwentyFourEntryCard()
+                    }
+                    .buttonStyle(.plain)
+                    .frame(maxWidth: 900)
+
+                    NavigationLink {
+                        MinesweeperDifficultySelectionView()
+                    } label: {
+                        MinesweeperEntryCard()
+                    }
+                    .buttonStyle(.plain)
+                    .frame(maxWidth: 900)
+
+                    NavigationLink {
+                        GomokuDifficultySelectionView()
+                    } label: {
+                        GomokuEntryCard()
+                    }
+                    .buttonStyle(.plain)
+                    .frame(maxWidth: 900)
+
+                    NavigationLink {
+                        ChessDifficultySelectionView()
+                    } label: {
+                        ChessEntryCard()
+                    }
+                    .buttonStyle(.plain)
+                    .frame(maxWidth: 900)
+
+                    NavigationLink {
+                        PokerDifficultySelectionView()
+                    } label: {
+                        PokerEntryCard()
+                    }
+                    .buttonStyle(.plain)
+                    .frame(maxWidth: 900)
+
+                    Text("选择一个游戏开始挑战")
+                        .font(.system(size: 16, weight: .medium, design: .rounded))
+                        .foregroundStyle(SaoleiPalette.mutedInk)
                 }
+                .frame(maxWidth: 900)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 24)
             }
         }
         .navigationBarHidden(true)
@@ -173,6 +103,196 @@ struct ContentView: View {
                 .font(.system(size: 18, weight: .medium, design: .rounded))
                 .foregroundStyle(SaoleiPalette.mutedInk)
         }
+    }
+}
+
+private struct DifficultySelectionView<Content: View>: View {
+    let gameTitle: String
+    let icon: String
+    let subtitle: String
+    let wideColumnCount: Int
+    let narrowColumnCount: Int
+    let content: () -> Content
+
+    init(
+        gameTitle: String,
+        icon: String,
+        subtitle: String,
+        wideColumnCount: Int,
+        narrowColumnCount: Int,
+        @ViewBuilder content: @escaping () -> Content
+    ) {
+        self.gameTitle = gameTitle
+        self.icon = icon
+        self.subtitle = subtitle
+        self.wideColumnCount = wideColumnCount
+        self.narrowColumnCount = narrowColumnCount
+        self.content = content
+    }
+
+    var body: some View {
+        ZStack {
+            SaoleiPalette.background.ignoresSafeArea()
+
+            GeometryReader { proxy in
+                ScrollView {
+                    VStack(spacing: 24) {
+                        VStack(spacing: 12) {
+                            Text(icon)
+                                .font(.system(size: 42))
+
+                            Text("选择\(gameTitle)难度")
+                                .font(.system(size: 30, weight: .black, design: .rounded))
+                                .foregroundStyle(SaoleiPalette.ink)
+
+                            Text(subtitle)
+                                .font(.system(size: 17, weight: .medium, design: .rounded))
+                                .foregroundStyle(SaoleiPalette.mutedInk)
+                        }
+                        .multilineTextAlignment(.center)
+
+                        LazyVGrid(
+                            columns: Array(
+                                repeating: GridItem(.flexible(), spacing: 16),
+                                count: proxy.size.width > 700 ? wideColumnCount : narrowColumnCount
+                            ),
+                            spacing: 16,
+                            content: content
+                        )
+                        .frame(maxWidth: 900)
+                    }
+                    .frame(maxWidth: 900)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 24)
+                }
+            }
+        }
+        .navigationTitle("选择难度")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+private struct MinesweeperDifficultySelectionView: View {
+    var body: some View {
+        DifficultySelectionView(
+            gameTitle: "扫雷",
+            icon: "💣",
+            subtitle: "选择棋盘大小和地雷数量，开始挑战",
+            wideColumnCount: 4,
+            narrowColumnCount: 2
+        ) {
+            ForEach(GameDifficulty.allCases) { difficulty in
+                NavigationLink {
+                    GameView(difficulty: difficulty)
+                } label: {
+                    DifficultyCard(difficulty: difficulty)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+private struct GomokuDifficultySelectionView: View {
+    var body: some View {
+        DifficultySelectionView(
+            gameTitle: "五子棋",
+            icon: "●○",
+            subtitle: "选择电脑强度，开始对弈",
+            wideColumnCount: 3,
+            narrowColumnCount: 1
+        ) {
+            ForEach(GomokuDifficulty.allCases) { difficulty in
+                NavigationLink {
+                    GomokuView(difficulty: difficulty)
+                } label: {
+                    GomokuDifficultyCard(difficulty: difficulty)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+private struct ChessDifficultySelectionView: View {
+    var body: some View {
+        DifficultySelectionView(
+            gameTitle: "国际象棋",
+            icon: "♔♞",
+            subtitle: "选择电脑等级，开始对弈",
+            wideColumnCount: 3,
+            narrowColumnCount: 1
+        ) {
+            ForEach(ChessDifficulty.allCases) { difficulty in
+                NavigationLink {
+                    ChessView(difficulty: difficulty)
+                } label: {
+                    ChessDifficultyCard(difficulty: difficulty)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+private struct PokerDifficultySelectionView: View {
+    var body: some View {
+        DifficultySelectionView(
+            gameTitle: "德州扑克",
+            icon: "♠♥",
+            subtitle: "选择机器人难度，开始对战",
+            wideColumnCount: 3,
+            narrowColumnCount: 1
+        ) {
+            ForEach(PokerDifficulty.allCases) { difficulty in
+                NavigationLink {
+                    PokerView(difficulty: difficulty)
+                } label: {
+                    PokerDifficultyCard(difficulty: difficulty)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+private struct MinesweeperEntryCard: View {
+    var body: some View {
+        HStack(spacing: 16) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(SaoleiPalette.blue.opacity(0.13))
+                    .frame(width: 70, height: 70)
+                Text("💣")
+                    .font(.system(size: 37))
+            }
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text("扫雷")
+                    .font(.system(size: 21, weight: .black, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.ink)
+                Text("找出所有安全格，避开隐藏的地雷")
+                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.mutedInk)
+            }
+
+            Spacer(minLength: 0)
+
+            Image(systemName: "arrow.right.circle.fill")
+                .font(.system(size: 25, weight: .bold))
+                .foregroundStyle(SaoleiPalette.blue)
+        }
+        .padding(16)
+        .background(SaoleiPalette.card)
+        .overlay {
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(SaoleiPalette.blue.opacity(0.32), lineWidth: 2)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .shadow(color: SaoleiPalette.blue.opacity(0.11), radius: 12, y: 6)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("扫雷，找出所有安全格，避开隐藏的地雷，选择难度")
     }
 }
 
@@ -608,7 +728,7 @@ struct StatView: View {
     }
 }
 
-#Preview("选择难度") {
+#Preview("游戏列表") {
     NavigationStack {
         ContentView()
     }

@@ -72,9 +72,8 @@ struct PokerView: View {
         return VStack(spacing: 4) {
             phoneNavigationHeader
 
-            pokerTable(isLandscape: false, fillsAvailableHeight: true, isPhoneCompact: true)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .layoutPriority(1)
+            pokerTable(isLandscape: false, fillsAvailableHeight: false, isPhoneCompact: true)
+                .frame(maxWidth: .infinity)
 
             actionPanel(isCompact: true, isPhoneCompact: true)
         }
@@ -731,7 +730,7 @@ struct PokerView: View {
             return 430
         }
 
-        return 390
+        return 360
     }
 }
 
