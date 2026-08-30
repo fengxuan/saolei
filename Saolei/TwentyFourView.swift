@@ -61,7 +61,7 @@ struct TwentyFourView: View {
         let verticalPadding: CGFloat = 4
         let contentSpacing: CGFloat = 8
         let availableWidth = max(1, proxy.size.width - horizontalPadding * 2)
-        let sidebarWidth = min(280, max(238, availableWidth * 0.32))
+        let sidebarWidth = min(250, max(220, availableWidth * 0.28))
         let primaryWidth = max(1, availableWidth - sidebarWidth - contentSpacing)
 
         return VStack(spacing: 4) {
@@ -70,17 +70,22 @@ struct TwentyFourView: View {
             HStack(alignment: .top, spacing: contentSpacing) {
                 VStack(spacing: 6) {
                     numbersCard(compact: true)
+                        .frame(maxWidth: .infinity)
                     operationCard(compact: true)
+                        .frame(maxWidth: .infinity)
 
                     if !game.steps.isEmpty {
                         stepsCard(compact: true)
+                            .frame(maxWidth: .infinity)
                     }
                 }
                 .frame(width: primaryWidth, alignment: .top)
 
                 VStack(spacing: 8) {
                     statusCard
+                        .frame(maxWidth: .infinity)
                     answerSection
+                        .frame(maxWidth: .infinity)
                 }
                 .frame(width: sidebarWidth, alignment: .top)
             }
@@ -208,6 +213,7 @@ struct TwentyFourView: View {
                 Text(interactionHint)
                     .font(.system(size: 14, weight: .medium, design: .rounded))
                     .foregroundStyle(SaoleiPalette.mutedInk)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Spacer(minLength: 0)
@@ -286,6 +292,7 @@ struct TwentyFourView: View {
                 Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
                     .font(.system(size: compact ? 11 : 14, weight: .semibold, design: .rounded))
                     .foregroundStyle(SaoleiPalette.orange)
+                    .fixedSize(horizontal: false, vertical: true)
             } else if !compact {
                 Label(interactionHint, systemImage: selectedOperation == nil ? "hand.tap.fill" : "arrow.right")
                     .font(.system(size: 14, weight: .semibold, design: .rounded))

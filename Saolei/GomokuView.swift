@@ -100,11 +100,15 @@ struct GomokuView: View {
         let headerHeight: CGFloat = 36
         let contentSpacing: CGFloat = 8
         let availableWidth = max(1, proxy.size.width - horizontalPadding * 2)
-        let sidebarWidth = min(280, max(238, availableWidth * 0.32))
-        let boardOuterInset: CGFloat = 20
+        let minimumSidebarWidth: CGFloat = 220
+        let boardOuterInset: CGFloat = 8
         let availableHeight = max(1, proxy.size.height - headerHeight - verticalPadding * 2)
-        let maxBoardSide = availableWidth - sidebarWidth - contentSpacing - boardOuterInset
-        let boardSide = max(1, min(720, availableHeight - boardOuterInset, maxBoardSide))
+        let boardSide = max(1, min(
+            720,
+            availableHeight - boardOuterInset,
+            availableWidth - minimumSidebarWidth - contentSpacing
+        ))
+        let sidebarWidth = max(minimumSidebarWidth, availableWidth - boardSide - contentSpacing)
 
         return VStack(spacing: 4) {
             phoneLandscapeHeader
@@ -115,8 +119,11 @@ struct GomokuView: View {
 
                 VStack(alignment: .leading, spacing: 8) {
                     landscapeStatusCard
+                        .frame(maxWidth: .infinity)
                     teachingCard
+                        .frame(maxWidth: .infinity)
                     restartButton
+                        .frame(maxWidth: .infinity)
                 }
                 .frame(width: sidebarWidth, alignment: .top)
             }
@@ -273,7 +280,8 @@ struct GomokuView: View {
                     Text(game.status.detail)
                         .font(.system(size: 11, weight: .medium, design: .rounded))
                         .foregroundStyle(SaoleiPalette.mutedInk)
-                        .lineLimit(1)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 Spacer(minLength: 0)
@@ -303,9 +311,8 @@ struct GomokuView: View {
             Text("玩法：黑方先行，连成五子获胜 · 教学：\(tip.message)")
                 .font(.system(size: 13, weight: .semibold, design: .rounded))
                 .foregroundStyle(SaoleiPalette.mutedInk)
-                .lineLimit(1)
-                .minimumScaleFactor(0.72)
-                .truncationMode(.tail)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 12)

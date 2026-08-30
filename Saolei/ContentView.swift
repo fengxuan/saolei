@@ -21,100 +21,111 @@ struct ContentView: View {
         ZStack {
             SaoleiPalette.background.ignoresSafeArea()
 
-            ScrollView {
-                VStack(spacing: 24) {
-                    selectionHeader
+            GeometryReader { proxy in
+                let isCompactLandscape = proxy.size.width > proxy.size.height && proxy.size.height < 500
+                let columns = Array(
+                    repeating: GridItem(.flexible(), spacing: isCompactLandscape ? 12 : 16),
+                    count: isCompactLandscape ? 3 : 1
+                )
 
-                    NavigationLink {
-                        TetrisView()
-                    } label: {
-                        TetrisEntryCard()
+                ScrollView {
+                    VStack(spacing: isCompactLandscape ? 10 : 24) {
+                        selectionHeader(isCompact: isCompactLandscape)
+
+                        LazyVGrid(columns: columns, spacing: isCompactLandscape ? 12 : 16) {
+                            NavigationLink {
+                                TetrisView()
+                            } label: {
+                                TetrisEntryCard(isCompact: isCompactLandscape)
+                            }
+                            .buttonStyle(.plain)
+
+                            NavigationLink {
+                                TwentyFourView()
+                            } label: {
+                                TwentyFourEntryCard(isCompact: isCompactLandscape)
+                            }
+                            .buttonStyle(.plain)
+
+                            NavigationLink {
+                                MinesweeperDifficultySelectionView()
+                            } label: {
+                                MinesweeperEntryCard(isCompact: isCompactLandscape)
+                            }
+                            .buttonStyle(.plain)
+
+                            NavigationLink {
+                                GomokuDifficultySelectionView()
+                            } label: {
+                                GomokuEntryCard(isCompact: isCompactLandscape)
+                            }
+                            .buttonStyle(.plain)
+
+                            NavigationLink {
+                                ChessDifficultySelectionView()
+                            } label: {
+                                ChessEntryCard(isCompact: isCompactLandscape)
+                            }
+                            .buttonStyle(.plain)
+
+                            NavigationLink {
+                                PokerDifficultySelectionView()
+                            } label: {
+                                PokerEntryCard(isCompact: isCompactLandscape)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .frame(maxWidth: 900)
+
+                        Text("选择一个游戏开始挑战")
+                            .font(.system(size: isCompactLandscape ? 13 : 16, weight: .medium, design: .rounded))
+                            .foregroundStyle(SaoleiPalette.mutedInk)
                     }
-                    .buttonStyle(.plain)
                     .frame(maxWidth: 900)
-
-                    NavigationLink {
-                        TwentyFourView()
-                    } label: {
-                        TwentyFourEntryCard()
-                    }
-                    .buttonStyle(.plain)
-                    .frame(maxWidth: 900)
-
-                    NavigationLink {
-                        MinesweeperDifficultySelectionView()
-                    } label: {
-                        MinesweeperEntryCard()
-                    }
-                    .buttonStyle(.plain)
-                    .frame(maxWidth: 900)
-
-                    NavigationLink {
-                        GomokuDifficultySelectionView()
-                    } label: {
-                        GomokuEntryCard()
-                    }
-                    .buttonStyle(.plain)
-                    .frame(maxWidth: 900)
-
-                    NavigationLink {
-                        ChessDifficultySelectionView()
-                    } label: {
-                        ChessEntryCard()
-                    }
-                    .buttonStyle(.plain)
-                    .frame(maxWidth: 900)
-
-                    NavigationLink {
-                        PokerDifficultySelectionView()
-                    } label: {
-                        PokerEntryCard()
-                    }
-                    .buttonStyle(.plain)
-                    .frame(maxWidth: 900)
-
-                    Text("选择一个游戏开始挑战")
-                        .font(.system(size: 16, weight: .medium, design: .rounded))
-                        .foregroundStyle(SaoleiPalette.mutedInk)
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, isCompactLandscape ? 12 : 24)
+                    .padding(.vertical, isCompactLandscape ? 12 : 24)
                 }
-                .frame(maxWidth: 900)
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 24)
             }
         }
         .navigationBarHidden(true)
     }
 
-    private var selectionHeader: some View {
-        VStack(spacing: 12) {
-            ZStack {
-                AppIconImage()
-            }
+    private func selectionHeader(isCompact: Bool) -> some View {
+        VStack(spacing: isCompact ? 6 : 12) {
+            AppIconImage(size: isCompact ? 48 : 82)
 
             Text("小小游戏乐园")
-                .font(.system(size: 42, weight: .black, design: .rounded))
+                .font(.system(size: isCompact ? 30 : 42, weight: .black, design: .rounded))
                 .foregroundStyle(SaoleiPalette.ink)
 
-            Text("动动脑筋，挑战扫雷、方块、算 24 点、五子棋、国际象棋和德州扑克！")
-                .font(.system(size: 18, weight: .medium, design: .rounded))
-                .foregroundStyle(SaoleiPalette.mutedInk)
+            if !isCompact {
+                Text("动动脑筋，挑战扫雷、方块、算 24 点、五子棋、国际象棋和德州扑克！")
+                    .font(.system(size: 18, weight: .medium, design: .rounded))
+                    .foregroundStyle(SaoleiPalette.mutedInk)
+            }
         }
     }
 }
 
 private struct AppIconImage: View {
+    let size: CGFloat
+
+    init(size: CGFloat = 82) {
+        self.size = size
+    }
+
     var body: some View {
         if let imagePath = Bundle.main.path(forResource: "AppIcon60x60@2x", ofType: "png"),
            let uiImage = UIImage(contentsOfFile: imagePath) {
             Image(uiImage: uiImage)
                 .resizable()
                 .scaledToFit()
-                .frame(width: 82, height: 82)
+                .frame(width: size, height: size)
                 .accessibilityLabel("应用图标")
         } else {
             Color.clear
-                .frame(width: 82, height: 82)
+                .frame(width: size, height: size)
                 .accessibilityLabel("应用图标")
         }
     }
@@ -149,18 +160,20 @@ private struct DifficultySelectionView<Content: View>: View {
             SaoleiPalette.background.ignoresSafeArea()
 
             GeometryReader { proxy in
+                let isLandscape = proxy.size.width > proxy.size.height
+
                 ScrollView {
-                    VStack(spacing: 24) {
-                        VStack(spacing: 12) {
+                    VStack(spacing: isLandscape ? 12 : 24) {
+                        VStack(spacing: isLandscape ? 6 : 12) {
                             Text(icon)
-                                .font(.system(size: 42))
+                                .font(.system(size: isLandscape ? 32 : 42))
 
                             Text("选择\(gameTitle)难度")
-                                .font(.system(size: 30, weight: .black, design: .rounded))
+                                .font(.system(size: isLandscape ? 26 : 30, weight: .black, design: .rounded))
                                 .foregroundStyle(SaoleiPalette.ink)
 
                             Text(subtitle)
-                                .font(.system(size: 17, weight: .medium, design: .rounded))
+                                .font(.system(size: isLandscape ? 15 : 17, weight: .medium, design: .rounded))
                                 .foregroundStyle(SaoleiPalette.mutedInk)
                         }
                         .multilineTextAlignment(.center)
@@ -170,15 +183,16 @@ private struct DifficultySelectionView<Content: View>: View {
                                 repeating: GridItem(.flexible(), spacing: 16),
                                 count: proxy.size.width > 700 ? wideColumnCount : narrowColumnCount
                             ),
-                            spacing: 16,
+                            spacing: isLandscape ? 12 : 16,
                             content: content
                         )
                         .frame(maxWidth: 900)
                     }
                     .frame(maxWidth: 900)
                     .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 24)
+                    .padding(.horizontal, isLandscape ? 16 : 24)
+                    .padding(.top, isLandscape ? 8 : 24)
+                    .padding(.bottom, isLandscape ? 16 : 24)
                 }
             }
         }
@@ -272,32 +286,37 @@ private struct PokerDifficultySelectionView: View {
 }
 
 private struct MinesweeperEntryCard: View {
+    let isCompact: Bool
+
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: isCompact ? 8 : 16) {
             ZStack {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(SaoleiPalette.blue.opacity(0.13))
-                    .frame(width: 70, height: 70)
+                    .frame(width: isCompact ? 48 : 70, height: isCompact ? 48 : 70)
                 Text("💣")
-                    .font(.system(size: 37))
+                    .font(.system(size: isCompact ? 27 : 37))
             }
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: isCompact ? 0 : 5) {
                 Text("扫雷")
-                    .font(.system(size: 21, weight: .black, design: .rounded))
+                    .font(.system(size: isCompact ? 17 : 21, weight: .black, design: .rounded))
                     .foregroundStyle(SaoleiPalette.ink)
-                Text("找出所有安全格，避开隐藏的地雷")
-                    .font(.system(size: 15, weight: .medium, design: .rounded))
-                    .foregroundStyle(SaoleiPalette.mutedInk)
+
+                if !isCompact {
+                    Text("找出所有安全格，避开隐藏的地雷")
+                        .font(.system(size: 15, weight: .medium, design: .rounded))
+                        .foregroundStyle(SaoleiPalette.mutedInk)
+                }
             }
 
             Spacer(minLength: 0)
 
             Image(systemName: "arrow.right.circle.fill")
-                .font(.system(size: 25, weight: .bold))
+                .font(.system(size: isCompact ? 20 : 25, weight: .bold))
                 .foregroundStyle(SaoleiPalette.blue)
         }
-        .padding(16)
+        .padding(isCompact ? 10 : 16)
         .background(SaoleiPalette.card)
         .overlay {
             RoundedRectangle(cornerRadius: 22, style: .continuous)
@@ -311,33 +330,38 @@ private struct MinesweeperEntryCard: View {
 }
 
 private struct GomokuEntryCard: View {
+    let isCompact: Bool
+
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: isCompact ? 8 : 16) {
             ZStack {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(GomokuPalette.board.opacity(0.25))
-                    .frame(width: 70, height: 70)
+                    .frame(width: isCompact ? 48 : 70, height: isCompact ? 48 : 70)
                 Text("●○")
-                    .font(.system(size: 29, weight: .black, design: .rounded))
+                    .font(.system(size: isCompact ? 23 : 29, weight: .black, design: .rounded))
                     .foregroundStyle(GomokuPalette.boardFrame)
             }
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: isCompact ? 0 : 5) {
                 Text("五子棋")
-                    .font(.system(size: 21, weight: .black, design: .rounded))
+                    .font(.system(size: isCompact ? 17 : 21, weight: .black, design: .rounded))
                     .foregroundStyle(SaoleiPalette.ink)
-                Text("黑方先手，连成五子，挑战不同强度的电脑")
-                    .font(.system(size: 15, weight: .medium, design: .rounded))
-                    .foregroundStyle(SaoleiPalette.mutedInk)
+
+                if !isCompact {
+                    Text("黑方先手，连成五子，挑战不同强度的电脑")
+                        .font(.system(size: 15, weight: .medium, design: .rounded))
+                        .foregroundStyle(SaoleiPalette.mutedInk)
+                }
             }
 
             Spacer(minLength: 0)
 
             Image(systemName: "arrow.right.circle.fill")
-                .font(.system(size: 25, weight: .bold))
+                .font(.system(size: isCompact ? 20 : 25, weight: .bold))
                 .foregroundStyle(GomokuPalette.boardFrame)
         }
-        .padding(16)
+        .padding(isCompact ? 10 : 16)
         .background(SaoleiPalette.card)
         .overlay {
             RoundedRectangle(cornerRadius: 22, style: .continuous)
@@ -403,33 +427,38 @@ private struct GomokuDifficultyCard: View {
 }
 
 private struct ChessEntryCard: View {
+    let isCompact: Bool
+
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: isCompact ? 8 : 16) {
             ZStack {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(ChessPalette.gold.opacity(0.17))
-                    .frame(width: 70, height: 70)
+                    .frame(width: isCompact ? 48 : 70, height: isCompact ? 48 : 70)
                 Text("♔♞")
-                    .font(.system(size: 31, design: .serif))
+                    .font(.system(size: isCompact ? 24 : 31, design: .serif))
                     .foregroundStyle(ChessPalette.boardFrame)
             }
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: isCompact ? 0 : 5) {
                 Text("国际象棋")
-                    .font(.system(size: 21, weight: .black, design: .rounded))
+                    .font(.system(size: isCompact ? 17 : 21, weight: .black, design: .rounded))
                     .foregroundStyle(SaoleiPalette.ink)
-                Text("和电脑对弈，练习布局、战术与将军")
-                    .font(.system(size: 15, weight: .medium, design: .rounded))
-                    .foregroundStyle(SaoleiPalette.mutedInk)
+
+                if !isCompact {
+                    Text("和电脑对弈，练习布局、战术与将军")
+                        .font(.system(size: 15, weight: .medium, design: .rounded))
+                        .foregroundStyle(SaoleiPalette.mutedInk)
+                }
             }
 
             Spacer(minLength: 0)
 
             Image(systemName: "arrow.right.circle.fill")
-                .font(.system(size: 25, weight: .bold))
+                .font(.system(size: isCompact ? 20 : 25, weight: .bold))
                 .foregroundStyle(ChessPalette.gold)
         }
-        .padding(16)
+        .padding(isCompact ? 10 : 16)
         .background(SaoleiPalette.card)
         .overlay {
             RoundedRectangle(cornerRadius: 22, style: .continuous)
@@ -495,33 +524,38 @@ private struct ChessDifficultyCard: View {
 }
 
 private struct PokerEntryCard: View {
+    let isCompact: Bool
+
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: isCompact ? 8 : 16) {
             ZStack {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(PokerPalette.felt.opacity(0.13))
-                    .frame(width: 70, height: 70)
+                    .frame(width: isCompact ? 48 : 70, height: isCompact ? 48 : 70)
                 Text("♠♥")
-                    .font(.system(size: 27, weight: .black, design: .rounded))
+                    .font(.system(size: isCompact ? 21 : 27, weight: .black, design: .rounded))
                     .foregroundStyle(PokerPalette.felt)
             }
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: isCompact ? 0 : 5) {
                 Text("德州扑克")
-                    .font(.system(size: 21, weight: .black, design: .rounded))
+                    .font(.system(size: isCompact ? 17 : 21, weight: .black, design: .rounded))
                     .foregroundStyle(SaoleiPalette.ink)
-                Text("和机器人比牌，拼出最强的五张牌")
-                    .font(.system(size: 15, weight: .medium, design: .rounded))
-                    .foregroundStyle(SaoleiPalette.mutedInk)
+
+                if !isCompact {
+                    Text("和机器人比牌，拼出最强的五张牌")
+                        .font(.system(size: 15, weight: .medium, design: .rounded))
+                        .foregroundStyle(SaoleiPalette.mutedInk)
+                }
             }
 
             Spacer(minLength: 0)
 
             Image(systemName: "arrow.right.circle.fill")
-                .font(.system(size: 25, weight: .bold))
+                .font(.system(size: isCompact ? 20 : 25, weight: .bold))
                 .foregroundStyle(PokerPalette.felt)
         }
-        .padding(16)
+        .padding(isCompact ? 10 : 16)
         .background(SaoleiPalette.card)
         .overlay {
             RoundedRectangle(cornerRadius: 22, style: .continuous)
@@ -586,32 +620,37 @@ private struct PokerDifficultyCard: View {
 }
 
 private struct TetrisEntryCard: View {
+    let isCompact: Bool
+
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: isCompact ? 8 : 16) {
             ZStack {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(SaoleiPalette.purple.opacity(0.16))
-                    .frame(width: 70, height: 70)
+                    .frame(width: isCompact ? 48 : 70, height: isCompact ? 48 : 70)
                 Text("🧩")
-                    .font(.system(size: 37))
+                    .font(.system(size: isCompact ? 27 : 37))
             }
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: isCompact ? 0 : 5) {
                 Text("俄罗斯方块")
-                    .font(.system(size: 21, weight: .black, design: .rounded))
+                    .font(.system(size: isCompact ? 17 : 21, weight: .black, design: .rounded))
                     .foregroundStyle(SaoleiPalette.ink)
-                Text("移动、旋转方块，拼满一行就消除")
-                    .font(.system(size: 15, weight: .medium, design: .rounded))
-                    .foregroundStyle(SaoleiPalette.mutedInk)
+
+                if !isCompact {
+                    Text("移动、旋转方块，拼满一行就消除")
+                        .font(.system(size: 15, weight: .medium, design: .rounded))
+                        .foregroundStyle(SaoleiPalette.mutedInk)
+                }
             }
 
             Spacer(minLength: 0)
 
             Image(systemName: "arrow.right.circle.fill")
-                .font(.system(size: 25, weight: .bold))
+                .font(.system(size: isCompact ? 20 : 25, weight: .bold))
                 .foregroundStyle(SaoleiPalette.purple)
         }
-        .padding(16)
+        .padding(isCompact ? 10 : 16)
         .background(SaoleiPalette.card)
         .overlay {
             RoundedRectangle(cornerRadius: 22, style: .continuous)
@@ -625,33 +664,38 @@ private struct TetrisEntryCard: View {
 }
 
 private struct TwentyFourEntryCard: View {
+    let isCompact: Bool
+
     var body: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: isCompact ? 8 : 16) {
             ZStack {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(SaoleiPalette.orange.opacity(0.15))
-                    .frame(width: 70, height: 70)
+                    .frame(width: isCompact ? 48 : 70, height: isCompact ? 48 : 70)
                 Text("24")
-                    .font(.system(size: 29, weight: .black, design: .rounded))
+                    .font(.system(size: isCompact ? 23 : 29, weight: .black, design: .rounded))
                     .foregroundStyle(SaoleiPalette.orange)
             }
 
-            VStack(alignment: .leading, spacing: 5) {
+            VStack(alignment: .leading, spacing: isCompact ? 0 : 5) {
                 Text("算 24 点")
-                    .font(.system(size: 21, weight: .black, design: .rounded))
+                    .font(.system(size: isCompact ? 17 : 21, weight: .black, design: .rounded))
                     .foregroundStyle(SaoleiPalette.ink)
-                Text("用四个数字和四则运算，挑战算出 24")
-                    .font(.system(size: 15, weight: .medium, design: .rounded))
-                    .foregroundStyle(SaoleiPalette.mutedInk)
+
+                if !isCompact {
+                    Text("用四个数字和四则运算，挑战算出 24")
+                        .font(.system(size: 15, weight: .medium, design: .rounded))
+                        .foregroundStyle(SaoleiPalette.mutedInk)
+                }
             }
 
             Spacer(minLength: 0)
 
             Image(systemName: "arrow.right.circle.fill")
-                .font(.system(size: 25, weight: .bold))
+                .font(.system(size: isCompact ? 20 : 25, weight: .bold))
                 .foregroundStyle(SaoleiPalette.orange)
         }
-        .padding(16)
+        .padding(isCompact ? 10 : 16)
         .background(SaoleiPalette.card)
         .overlay {
             RoundedRectangle(cornerRadius: 22, style: .continuous)

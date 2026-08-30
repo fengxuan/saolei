@@ -87,21 +87,29 @@ struct TetrisView: View {
         let verticalPadding: CGFloat = 4
         let headerHeight: CGFloat = 36
         let contentSpacing: CGFloat = 12
-        let sidebarWidth = min(250, max(220, proxy.size.width * 0.32))
-        let boardWidth = proxy.size.width - horizontalPadding * 2 - contentSpacing - sidebarWidth
+        let availableWidth = max(1, proxy.size.width - horizontalPadding * 2)
+        let minimumSidebarWidth: CGFloat = 220
         let availableHeight = max(1, proxy.size.height - headerHeight - verticalPadding * 2)
-        let boardSide = max(1, min(260, boardWidth, availableHeight / 2))
+        let boardSide = max(1, min(
+            260,
+            availableHeight / 2,
+            availableWidth - minimumSidebarWidth - contentSpacing
+        ))
+        let boardContainerWidth = max(boardSide, 190)
+        let sidebarWidth = max(minimumSidebarWidth, availableWidth - boardContainerWidth - contentSpacing)
 
         return VStack(spacing: 4) {
             phoneLandscapeHeader
 
             HStack(alignment: .top, spacing: contentSpacing) {
                 boardWithStatus(side: boardSide, compact: true)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .frame(width: boardContainerWidth, height: boardSide * 2, alignment: .top)
 
                 VStack(spacing: 8) {
                     scoreCard(compact: true)
+                        .frame(maxWidth: .infinity)
                     controlPanel(compact: true)
+                        .frame(maxWidth: .infinity)
                 }
                 .frame(width: sidebarWidth, alignment: .top)
             }

@@ -43,11 +43,15 @@ struct GameView: View {
         let headerHeight: CGFloat = 36
         let contentSpacing: CGFloat = 8
         let availableWidth = max(1, proxy.size.width - horizontalPadding * 2)
-        let sidebarWidth = min(280, max(238, availableWidth * 0.34))
-        let boardOuterInset: CGFloat = 20
+        let minimumSidebarWidth: CGFloat = 220
+        let boardOuterInset: CGFloat = 8
         let availableHeight = max(1, proxy.size.height - headerHeight - verticalPadding * 2)
-        let maxGridSide = availableWidth - sidebarWidth - contentSpacing - boardOuterInset
-        let boardSide = max(1, min(760, availableHeight - boardOuterInset, maxGridSide))
+        let boardSide = max(1, min(
+            760,
+            availableHeight - boardOuterInset,
+            availableWidth - minimumSidebarWidth - contentSpacing
+        ))
+        let sidebarWidth = max(minimumSidebarWidth, availableWidth - boardSide - contentSpacing)
 
         return VStack(spacing: 4) {
             phoneLandscapeHeader
@@ -58,7 +62,9 @@ struct GameView: View {
 
                 VStack(spacing: 8) {
                     statusCard
+                        .frame(maxWidth: .infinity)
                     boardToolbar
+                        .frame(maxWidth: .infinity)
                 }
                 .frame(width: sidebarWidth, alignment: .top)
             }

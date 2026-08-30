@@ -78,11 +78,15 @@ struct ChessView: View {
         let headerHeight: CGFloat = 36
         let contentSpacing: CGFloat = 8
         let availableWidth = max(1, size.width - horizontalPadding * 2)
-        let sidebarWidth = min(280, max(238, availableWidth * 0.34))
-        let boardOuterInset: CGFloat = 16
+        let minimumSidebarWidth: CGFloat = 220
+        let boardOuterInset: CGFloat = 0
         let availableHeight = max(1, size.height - headerHeight - verticalPadding * 2)
-        let maxBoardSide = availableWidth - sidebarWidth - contentSpacing - boardOuterInset
-        let boardSide = max(1, min(720, availableHeight - boardOuterInset, maxBoardSide))
+        let boardSide = max(1, min(
+            720,
+            availableHeight - boardOuterInset,
+            availableWidth - minimumSidebarWidth - contentSpacing
+        ))
+        let sidebarWidth = max(minimumSidebarWidth, availableWidth - boardSide - contentSpacing)
 
         return VStack(spacing: 4) {
             phoneLandscapeHeader
@@ -93,7 +97,9 @@ struct ChessView: View {
 
                 VStack(spacing: 8) {
                     statusCard
+                        .frame(maxWidth: .infinity)
                     controlsCard
+                        .frame(maxWidth: .infinity)
 
                     HStack(spacing: 8) {
                         undoButton
@@ -344,12 +350,13 @@ struct ChessView: View {
                     Text(lastPlayerMoveSummary(lastPlayerMove))
                         .font(.system(size: 13, weight: .semibold, design: .rounded))
                         .foregroundStyle(SaoleiPalette.mutedInk)
-                        .lineLimit(1)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                         .minimumScaleFactor(0.65)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .frame(height: 20)
+            .frame(minHeight: 20, alignment: .topLeading)
 
             HStack(spacing: 8) {
                 Image(systemName: "chart.bar.fill")
@@ -416,17 +423,18 @@ struct ChessView: View {
                                 ForEach(gameplayMessages) { message in
                                     Text(message.text)
                                         .foregroundStyle(message.isCheck ? ChessPalette.check : SaoleiPalette.mutedInk)
-                                        .lineLimit(1)
+                                        .lineLimit(2)
+                                        .fixedSize(horizontal: false, vertical: true)
                                         .minimumScaleFactor(0.70)
                                         .frame(maxWidth: .infinity, alignment: .leading)
-                                        .frame(height: 18, alignment: .leading)
+                                        .frame(minHeight: 18, alignment: .leading)
                                         .id(message.id)
                                         .transition(.opacity.combined(with: .move(edge: .bottom)))
                                 }
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
-                        .frame(height: 38)
+                        .frame(minHeight: 38)
                         .onChange(of: gameplayMessages.last?.id) { _ in
                             guard let lastMessageID = gameplayMessages.last?.id else { return }
                             withAnimation(.easeInOut(duration: 1.0)) {
@@ -438,7 +446,7 @@ struct ChessView: View {
             }
                 .font(.system(size: 13, weight: .medium, design: .rounded))
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .frame(height: 38, alignment: .topLeading)
+                .frame(minHeight: 38, alignment: .topLeading)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(15)
@@ -450,8 +458,8 @@ struct ChessView: View {
         Text("白方先行。支持将军、将死、王车易位、吃过路兵和兵升变。")
             .font(.system(size: 12, weight: .medium, design: .rounded))
             .foregroundStyle(SaoleiPalette.mutedInk)
-            .lineLimit(1)
-            .minimumScaleFactor(0.70)
+            .lineLimit(2)
+            .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, 15)
             .padding(.vertical, 13)
@@ -803,9 +811,6 @@ private struct ChessMoveArrow: View {
             : unit
         let arrowSize = max(7, cellSide * 0.13)
         let perpendicular = CGVector(dx: -arrowUnit.dy, dy: arrowUnit.dx)
-        let arrowBase = offset(lineEnd, by: arrowUnit, distance: -arrowSize)
-        let arrowLeft = offset(arrowBase, by: perpendicular, distance: arrowSize * 0.52)
-        let arrowRight = offset(arrowBase, by: perpendicular, distance: -arrowSize * 0.52)
 
         Path { path in
             path.move(to: lineStart)
@@ -825,11 +830,13 @@ private struct ChessMoveArrow: View {
             )
         )
         .overlay {
-            Path { path in
-                path.move(to: arrowLeft)
-                path.addLine(to: lineEnd)
-                path.addLine(to: arrowRight)
-            }
+            arrowHeadPath(
+                tip: lineEnd,
+                direction: arrowUnit,
+                perpendicular: perpendicular,
+                size: arrowSize,
+                isCurved: isKnightMove
+            )
             .stroke(
                 SaoleiPalette.mint,
                 style: StrokeStyle(
@@ -840,6 +847,57 @@ private struct ChessMoveArrow: View {
             )
         }
         .shadow(color: SaoleiPalette.mint.opacity(0.45), radius: 2)
+    }
+
+    private func arrowHeadPath(
+        tip: CGPoint,
+        direction: CGVector,
+        perpendicular: CGVector,
+        size: CGFloat,
+        isCurved: Bool
+    ) -> Path {
+        let headLength = size * (isCurved ? 1.12 : 1)
+        let headWidth = size * 0.52
+        let base = offset(tip, by: direction, distance: -headLength)
+        let left = offset(base, by: perpendicular, distance: headWidth)
+        let right = offset(base, by: perpendicular, distance: -headWidth)
+
+        return Path { path in
+            path.move(to: left)
+            if isCurved {
+                path.addCurve(
+                    to: tip,
+                    control1: offset(
+                        offset(left, by: direction, distance: headLength * 0.36),
+                        by: perpendicular,
+                        distance: headWidth * 0.20
+                    ),
+                    control2: offset(
+                        offset(tip, by: direction, distance: -headLength * 0.28),
+                        by: perpendicular,
+                        distance: headWidth * 0.10
+                    )
+                )
+                path.move(to: right)
+                path.addCurve(
+                    to: tip,
+                    control1: offset(
+                        offset(right, by: direction, distance: headLength * 0.36),
+                        by: perpendicular,
+                        distance: -headWidth * 0.20
+                    ),
+                    control2: offset(
+                        offset(tip, by: direction, distance: -headLength * 0.28),
+                        by: perpendicular,
+                        distance: -headWidth * 0.10
+                    )
+                )
+            } else {
+                path.addLine(to: tip)
+                path.move(to: right)
+                path.addLine(to: tip)
+            }
+        }
     }
 
     private func knightLineStart(from point: CGPoint) -> CGPoint {
