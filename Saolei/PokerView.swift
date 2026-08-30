@@ -15,6 +15,7 @@ struct PokerView: View {
     let difficulty: PokerDifficulty
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dismiss) private var dismiss
     @State private var game: PokerGame
     @State private var selectedBet: Int
 
@@ -36,26 +37,15 @@ struct PokerView: View {
                 if isIPadLayout {
                     iPadLayout(isLandscape: isLandscape, size: proxy.size)
                 } else {
-                    ScrollView {
-                        VStack(spacing: 14) {
-                            gameHeader
-                            scoreCard
-                            pokerTable
-                            pokerKnowledgeTip(isCompact: false)
-                            actionPanel
-                            rulesCard
-                        }
-                        .frame(maxWidth: 760)
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 12)
-                    }
-                    .frame(width: proxy.size.width)
+                    phoneLayout(size: proxy.size)
                 }
             }
         }
-        .navigationTitle("德州扑克")
+        .navigationTitle(horizontalSizeClass == .regular ? "德州扑克" : "")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(horizontalSizeClass != .regular)
+        .navigationBarHidden(horizontalSizeClass != .regular)
+        .toolbar(horizontalSizeClass == .regular ? .visible : .hidden, for: .navigationBar)
     }
 
     @ViewBuilder
@@ -65,6 +55,56 @@ struct PokerView: View {
         } else {
             iPadPortraitLayout(size: size)
         }
+    }
+
+    @ViewBuilder
+    private func phoneLayout(size: CGSize) -> some View {
+        if size.width > size.height {
+            phoneLandscapeLayout(size: size)
+        } else {
+            phonePortraitLayout(size: size)
+        }
+    }
+
+    private func phonePortraitLayout(size: CGSize) -> some View {
+        let horizontalPadding = min(14, max(10, size.width * 0.03))
+
+        return VStack(spacing: 4) {
+            phoneNavigationHeader
+
+            pokerTable(isLandscape: false, fillsAvailableHeight: true, isPhoneCompact: true)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .layoutPriority(1)
+
+            actionPanel(isCompact: true, isPhoneCompact: true)
+        }
+        .frame(maxWidth: 760, maxHeight: .infinity, alignment: .top)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(.horizontal, horizontalPadding)
+        .padding(.top, 0)
+        .padding(.bottom, 4)
+    }
+
+    private func phoneLandscapeLayout(size: CGSize) -> some View {
+        let horizontalPadding = min(16, max(10, size.width * 0.025))
+        let actionWidth = min(280, max(238, size.width * 0.34))
+
+        return VStack(spacing: 4) {
+            phoneNavigationHeader
+
+            HStack(alignment: .top, spacing: 8) {
+                pokerTable(isLandscape: true, fillsAvailableHeight: true, isPhoneCompact: true)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                actionPanel(isCompact: true, isPhoneCompact: true)
+                    .frame(width: actionWidth, alignment: .top)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .frame(maxWidth: 1_240, maxHeight: .infinity, alignment: .top)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(.horizontal, horizontalPadding)
+        .padding(.vertical, 4)
     }
 
     private func iPadLandscapeLayout(size: CGSize) -> some View {
@@ -172,17 +212,56 @@ struct PokerView: View {
         .shadow(color: PokerPalette.feltDeep.opacity(0.10), radius: 12, y: 6)
     }
 
-    private var pokerTable: some View {
-        pokerTable(isLandscape: false, fillsAvailableHeight: false)
+    private var phoneNavigationHeader: some View {
+        HStack(spacing: 7) {
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 15, weight: .bold))
+                    .foregroundStyle(PokerPalette.ink)
+                    .frame(width: 28, height: 28)
+                    .background(SaoleiPalette.card)
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .frame(width: 36, height: 36)
+            .accessibilityLabel("返回")
+
+            VStack(alignment: .leading, spacing: 0) {
+                Text("德州扑克")
+                    .font(.system(size: 17, weight: .black, design: .rounded))
+                    .foregroundStyle(PokerPalette.ink)
+                Text(difficulty.title)
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(accentColor)
+            }
+
+            Spacer(minLength: 4)
+
+            HStack(spacing: 6) {
+                Text("筹 \(game.playerChips)")
+                Text("池 \(game.pot)")
+                Text("#\(game.handNumber)")
+            }
+            .font(.system(size: 10, weight: .bold, design: .rounded))
+            .foregroundStyle(PokerPalette.mutedInk)
+        }
+        .lineLimit(1)
+        .minimumScaleFactor(0.72)
+        .padding(.horizontal, 4)
+        .frame(height: 36)
+        .background(SaoleiPalette.card)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 
-    private func pokerTable(isLandscape: Bool, fillsAvailableHeight: Bool) -> some View {
+    private func pokerTable(isLandscape: Bool, fillsAvailableHeight: Bool, isPhoneCompact: Bool = false) -> some View {
         Group {
             if fillsAvailableHeight {
-                pokerTableBody(isLandscape: isLandscape)
+                pokerTableBody(isLandscape: isLandscape, isPhoneCompact: isPhoneCompact)
                     .frame(maxHeight: .infinity)
             } else {
-                pokerTableBody(isLandscape: isLandscape)
+                pokerTableBody(isLandscape: isLandscape, isPhoneCompact: isPhoneCompact)
                     .frame(height: pokerTableHeight(isLandscape: isLandscape))
             }
         }
@@ -199,25 +278,27 @@ struct PokerView: View {
         .accessibilityLabel("德州扑克牌桌，\(game.street.title)，底池 \(game.pot)")
     }
 
-    private func pokerTableBody(isLandscape: Bool) -> some View {
+    private func pokerTableBody(isLandscape: Bool, isPhoneCompact: Bool = false) -> some View {
         GeometryReader { proxy in
-            let tableSpacing: CGFloat = isLandscape ? 9 : (horizontalSizeClass == .regular ? 10 : 12)
-            let tablePadding: CGFloat = isLandscape ? 16 : (horizontalSizeClass == .regular ? 18 : 16)
-            let cardSpacing: CGFloat = isLandscape ? 9 : 8
+            let tableSpacing: CGFloat = isPhoneCompact ? (isLandscape ? 5 : 6) : (isLandscape ? 9 : (horizontalSizeClass == .regular ? 10 : 12))
+            let tablePadding: CGFloat = isPhoneCompact ? (isLandscape ? 7 : 8) : (isLandscape ? 16 : (horizontalSizeClass == .regular ? 18 : 16))
+            let cardSpacing: CGFloat = isPhoneCompact ? 5 : (isLandscape ? 9 : 8)
             let widthLimited = (proxy.size.width - tablePadding * 2 - cardSpacing * 4) / 5
-            let fixedHeight = tablePadding * 2 + 24 + 18 + 1 + 24 + tableSpacing * 6
+            let fixedHeight = isPhoneCompact
+                ? tablePadding * 2 + 20 + 14 + 1 + 20 + tableSpacing * 6
+                : tablePadding * 2 + 24 + 18 + 1 + 24 + tableSpacing * 6
             let heightLimited = (proxy.size.height - fixedHeight) / 4.26
             let maxCardWidth: CGFloat = horizontalSizeClass == .regular
                 ? (isLandscape ? 112 : 102)
-                : 62
-            let cardWidth = max(38, min(maxCardWidth, widthLimited, heightLimited))
+                : (isPhoneCompact ? 56 : 62)
+            let cardWidth = max(isPhoneCompact ? 32 : 38, min(maxCardWidth, widthLimited, heightLimited))
 
             VStack(spacing: tableSpacing) {
                 HStack {
-                    tablePlayerLabel(name: "机器人", icon: "cpu", tint: SaoleiPalette.purple)
+                    tablePlayerLabel(name: "机器人", icon: "cpu", tint: SaoleiPalette.purple, isCompact: isPhoneCompact)
                     Spacer()
                     Text("\(game.street.title) · 底池 \(game.pot)")
-                        .font(.system(size: 13, weight: .bold, design: .rounded))
+                        .font(.system(size: isPhoneCompact ? 11 : 13, weight: .bold, design: .rounded))
                         .foregroundStyle(.white.opacity(0.82))
                 }
 
@@ -232,7 +313,7 @@ struct PokerView: View {
                 }
 
                 Text("公共牌")
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .font(.system(size: isPhoneCompact ? 11 : 13, weight: .bold, design: .rounded))
                     .foregroundStyle(.white.opacity(0.72))
 
                 HStack(spacing: cardSpacing) {
@@ -249,13 +330,13 @@ struct PokerView: View {
                     .overlay(.white.opacity(0.16))
 
                 HStack {
-                    tablePlayerLabel(name: "你", icon: "person.fill", tint: PokerPalette.gold)
+                    tablePlayerLabel(name: "你", icon: "person.fill", tint: PokerPalette.gold, isCompact: isPhoneCompact)
                     Spacer()
                     if game.isPlayerTurn, let equity = game.playerEquity {
                         PokerEquityBadge(equity: equity)
                     }
                     Text("小盲 \(PokerGame.smallBlind) · 大盲 \(PokerGame.bigBlind)")
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .font(.system(size: isPhoneCompact ? 10 : 12, weight: .semibold, design: .rounded))
                         .foregroundStyle(.white.opacity(0.66))
                 }
 
@@ -265,51 +346,47 @@ struct PokerView: View {
                     }
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(.horizontal, isLandscape ? 14 : 18)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .padding(.horizontal, isPhoneCompact ? (isLandscape ? 9 : 12) : (isLandscape ? 14 : 18))
             .padding(.vertical, tablePadding)
         }
     }
 
-    private func tablePlayerLabel(name: String, icon: String, tint: Color) -> some View {
+    private func tablePlayerLabel(name: String, icon: String, tint: Color, isCompact: Bool = false) -> some View {
         HStack(spacing: 7) {
             Image(systemName: icon)
-                .font(.system(size: 15, weight: .bold))
+                .font(.system(size: isCompact ? 13 : 15, weight: .bold))
                 .foregroundStyle(tint)
             Text(name)
-                .font(.system(size: 16, weight: .black, design: .rounded))
+                .font(.system(size: isCompact ? 14 : 16, weight: .black, design: .rounded))
                 .foregroundStyle(.white)
         }
     }
 
-    private var actionPanel: some View {
-        actionPanel(isCompact: false)
-    }
-
-    private func actionPanel(isCompact: Bool, usesHorizontalActions: Bool = false) -> some View {
-        VStack(spacing: isCompact ? 8 : 12) {
-            actionStatusArea(isCompact: isCompact)
+    private func actionPanel(isCompact: Bool, isPhoneCompact: Bool = false, usesHorizontalActions: Bool = false) -> some View {
+        VStack(spacing: isPhoneCompact ? 4 : (isCompact ? 8 : 12)) {
+            actionStatusArea(isCompact: isCompact, isPhoneCompact: isPhoneCompact)
 
             Text(game.message)
-                .font(.system(size: 15, weight: .semibold, design: .rounded))
+                .font(.system(size: isPhoneCompact ? 13 : 15, weight: .semibold, design: .rounded))
                 .foregroundStyle(PokerPalette.mutedInk)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .frame(height: isCompact ? 38 : 42, alignment: .leading)
-                .lineLimit(2)
+                .frame(height: isPhoneCompact ? 20 : (isCompact ? 38 : 42), alignment: .leading)
+                .lineLimit(isPhoneCompact ? 1 : 2)
 
             if game.isPlayerTurn {
                 if horizontalSizeClass == .regular {
                     iPadActionControls(isCompact: isCompact, usesHorizontalActions: usesHorizontalActions)
                 } else {
-                    phoneActionControls
+                    phoneActionControls(isCompact: isPhoneCompact)
                 }
             } else {
                 resultActionControls(isCompact: isCompact)
             }
         }
-        .padding(isCompact ? 12 : 16)
+        .padding(isPhoneCompact ? 8 : (isCompact ? 12 : 16))
         .background(SaoleiPalette.card)
-        .clipShape(RoundedRectangle(cornerRadius: 21, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: isPhoneCompact ? 17 : 21, style: .continuous))
         .shadow(color: PokerPalette.feltDeep.opacity(0.10), radius: 12, y: 6)
     }
 
@@ -325,31 +402,56 @@ struct PokerView: View {
         .accessibilityLabel(game.knowledgeTip)
     }
 
-    private func actionStatusArea(isCompact: Bool) -> some View {
-        VStack(spacing: isCompact ? 8 : 10) {
-            HStack(alignment: .center) {
-                Label(game.isPlayerTurn ? "轮到你行动" : resultTitle, systemImage: game.isPlayerTurn ? "hand.tap.fill" : "flag.checkered")
-                    .font(.system(size: 18, weight: .black, design: .rounded))
-                    .foregroundStyle(game.isPlayerTurn ? PokerPalette.feltDeep : resultTint)
+    @ViewBuilder
+    private func actionStatusArea(isCompact: Bool, isPhoneCompact: Bool = false) -> some View {
+        if isPhoneCompact {
+            VStack(spacing: 4) {
+                actionStatusHeader(isPhoneCompact: true)
 
-                Spacer(minLength: 8)
-
-                Text(game.street.title)
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
-                    .foregroundStyle(PokerPalette.mutedInk)
+                if let botAction = game.botAction {
+                    Text("机器人：\(botAction.title)")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundStyle(PokerPalette.feltDeep)
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 8)
+                        .frame(height: 24)
+                        .background(PokerPalette.gold.opacity(0.18))
+                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                }
             }
+            .frame(maxWidth: .infinity)
+            .frame(height: game.botAction == nil ? 22 : 50, alignment: .top)
+        } else {
+            VStack(spacing: isCompact ? 8 : 10) {
+                actionStatusHeader(isPhoneCompact: false)
 
-            if let botAction = game.botAction {
-                PokerBotActionBanner(action: botAction)
-                    .frame(height: isCompact ? 52 : 58)
-            } else {
-                Color.clear
-                    .frame(height: isCompact ? 52 : 58)
-                    .accessibilityHidden(true)
+                if let botAction = game.botAction {
+                    PokerBotActionBanner(action: botAction)
+                        .frame(height: isCompact ? 52 : 58)
+                } else {
+                    Color.clear
+                        .frame(height: isCompact ? 52 : 58)
+                        .accessibilityHidden(true)
+                }
             }
+            .frame(maxWidth: .infinity)
+            .frame(height: isCompact ? 86 : 96, alignment: .top)
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: isCompact ? 86 : 96, alignment: .top)
+    }
+
+    private func actionStatusHeader(isPhoneCompact: Bool) -> some View {
+        HStack(alignment: .center) {
+            Label(game.isPlayerTurn ? "轮到你行动" : resultTitle, systemImage: game.isPlayerTurn ? "hand.tap.fill" : "flag.checkered")
+                .font(.system(size: isPhoneCompact ? 15 : 18, weight: .black, design: .rounded))
+                .foregroundStyle(game.isPlayerTurn ? PokerPalette.feltDeep : resultTint)
+
+            Spacer(minLength: 8)
+
+            Text(game.street.title)
+                .font(.system(size: isPhoneCompact ? 11 : 13, weight: .bold, design: .rounded))
+                .foregroundStyle(PokerPalette.mutedInk)
+        }
     }
 
     private func iPadActionControls(isCompact: Bool, usesHorizontalActions: Bool) -> some View {
@@ -430,26 +532,53 @@ struct PokerView: View {
         }
     }
 
-    private var phoneActionControls: some View {
-        VStack(spacing: 10) {
-            actionButton(title: game.callTitle, systemName: game.callAmount == 0 ? "hand.wave.fill" : "arrow.right", tint: SaoleiPalette.blueDeep) {
-                game.playerCheckOrCall()
-                syncBetSelection()
-                fireImpact()
-            }
+    @ViewBuilder
+    private func phoneActionControls(isCompact: Bool) -> some View {
+        if isCompact {
+            VStack(spacing: 4) {
+                HStack(spacing: 6) {
+                    actionButton(title: game.callTitle, systemName: game.callAmount == 0 ? "hand.wave.fill" : "arrow.right", tint: SaoleiPalette.blueDeep, compact: true) {
+                        game.playerCheckOrCall()
+                        syncBetSelection()
+                        fireImpact()
+                    }
 
-            HStack(spacing: 10) {
-                betIncrementButton(isCompact: false)
-                actionButton(title: game.currentBet == 0 ? "下注" : "加注", systemName: "arrow.up", tint: PokerPalette.felt) {
-                    game.placePlayerBet(to: selectedBetAmount)
+                    actionButton(title: game.currentBet == 0 ? "下注 \(selectedBetAmount)" : "加注 \(selectedBetAmount)", systemName: "arrow.up", tint: PokerPalette.felt, compact: true) {
+                        game.placePlayerBet(to: selectedBetAmount)
+                        syncBetSelection()
+                        fireImpact()
+                    }
+                    .disabled(game.betOptions.isEmpty)
+
+                    actionButton(title: "弃牌", systemName: "xmark", tint: PokerPalette.red, compact: true) {
+                        game.playerFold()
+                        fireImpact()
+                    }
+                }
+
+                iPadBetPresetRow(isCompact: true)
+            }
+        } else {
+            VStack(spacing: 10) {
+                actionButton(title: game.callTitle, systemName: game.callAmount == 0 ? "hand.wave.fill" : "arrow.right", tint: SaoleiPalette.blueDeep) {
+                    game.playerCheckOrCall()
                     syncBetSelection()
                     fireImpact()
                 }
-            }
 
-            actionButton(title: "弃牌", systemName: "xmark", tint: PokerPalette.red) {
-                game.playerFold()
-                fireImpact()
+                HStack(spacing: 10) {
+                    betIncrementButton(isCompact: false)
+                    actionButton(title: game.currentBet == 0 ? "下注" : "加注", systemName: "arrow.up", tint: PokerPalette.felt) {
+                        game.placePlayerBet(to: selectedBetAmount)
+                        syncBetSelection()
+                        fireImpact()
+                    }
+                }
+
+                actionButton(title: "弃牌", systemName: "xmark", tint: PokerPalette.red) {
+                    game.playerFold()
+                    fireImpact()
+                }
             }
         }
     }
@@ -478,7 +607,7 @@ struct PokerView: View {
             }
             .foregroundStyle(PokerPalette.feltDeep)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, compact ? 6 : 8)
+            .padding(.vertical, compact ? 4 : 8)
             .background((amount == selectedBet ? PokerPalette.gold.opacity(0.36) : PokerPalette.gold.opacity(0.20)))
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
@@ -507,7 +636,7 @@ struct PokerView: View {
             }
             .foregroundStyle(PokerPalette.feltDeep)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, isCompact ? 6 : 8)
+            .padding(.vertical, isCompact ? 4 : 8)
             .background(PokerPalette.gold.opacity(isAllIn ? 0.42 : 0.24))
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
@@ -538,29 +667,13 @@ struct PokerView: View {
                 .font(.system(size: 15, weight: .black, design: .rounded))
                 .foregroundStyle(tint)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, compact ? 9 : 13)
+                .padding(.vertical, compact ? 5 : 13)
+                .lineLimit(1)
+                .minimumScaleFactor(compact ? 0.72 : 1)
                 .background(tint.opacity(0.12))
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(.plain)
-    }
-
-    private var rulesCard: some View {
-        HStack(alignment: .top, spacing: 11) {
-            Image(systemName: "lightbulb.fill")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundStyle(PokerPalette.gold)
-                .padding(.top, 2)
-
-            Text("每人两张底牌，和公共牌组成最强五张牌。你是小盲，先跟注或加注；每轮都可以选择弃牌、过牌、跟注或下注。")
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundStyle(PokerPalette.mutedInk)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(15)
-            .background(PokerPalette.gold.opacity(0.13))
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
     private var selectedBetAmount: Int {
