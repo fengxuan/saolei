@@ -14,7 +14,6 @@ enum PokerPalette {
 struct PokerView: View {
     let difficulty: PokerDifficulty
 
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.dismiss) private var dismiss
     @State private var game: PokerGame
     @State private var selectedBet: Int
@@ -31,7 +30,7 @@ struct PokerView: View {
             PokerPalette.background.ignoresSafeArea()
 
             GeometryReader { proxy in
-                let isIPadLayout = horizontalSizeClass == .regular
+                let isIPadLayout = isIPadDevice
                 let isLandscape = proxy.size.width > proxy.size.height
 
                 if isIPadLayout {
@@ -41,11 +40,15 @@ struct PokerView: View {
                 }
             }
         }
-        .navigationTitle(horizontalSizeClass == .regular ? "德州扑克" : "")
+        .navigationTitle(isIPadDevice ? "德州扑克" : "")
         .navigationBarTitleDisplayMode(.inline)
-        .navigationBarBackButtonHidden(horizontalSizeClass != .regular)
-        .navigationBarHidden(horizontalSizeClass != .regular)
-        .toolbar(horizontalSizeClass == .regular ? .visible : .hidden, for: .navigationBar)
+        .navigationBarBackButtonHidden(!isIPadDevice)
+        .navigationBarHidden(!isIPadDevice)
+        .toolbar(isIPadDevice ? .visible : .hidden, for: .navigationBar)
+    }
+
+    private var isIPadDevice: Bool {
+        UIDevice.current.userInterfaceIdiom == .pad
     }
 
     @ViewBuilder
@@ -81,7 +84,8 @@ struct PokerView: View {
                 .frame(maxWidth: .infinity)
 
             VStack(spacing: 8) {
-                actionPanel(isCompact: true, isPhoneCompact: true)
+                actionPanel(isCompact: true, isPhoneCompact: true, isPhonePortrait: true)
+                    .padding(.top, 8)
                 pokerKnowledgeTip(isCompact: true)
                     .padding(.horizontal, 4)
             }
@@ -309,15 +313,15 @@ struct PokerView: View {
 
     private func pokerTableBody(isLandscape: Bool, isPhoneCompact: Bool = false) -> some View {
         GeometryReader { proxy in
-            let tableSpacing: CGFloat = isPhoneCompact ? (isLandscape ? 5 : 6) : (isLandscape ? 9 : (horizontalSizeClass == .regular ? 10 : 12))
-            let tablePadding: CGFloat = isPhoneCompact ? (isLandscape ? 7 : 8) : (isLandscape ? 16 : (horizontalSizeClass == .regular ? 18 : 16))
+            let tableSpacing: CGFloat = isPhoneCompact ? (isLandscape ? 5 : 6) : (isLandscape ? 9 : (isIPadDevice ? 10 : 12))
+            let tablePadding: CGFloat = isPhoneCompact ? (isLandscape ? 7 : 8) : (isLandscape ? 16 : (isIPadDevice ? 18 : 16))
             let cardSpacing: CGFloat = isPhoneCompact ? 5 : (isLandscape ? 9 : 8)
             let widthLimited = (proxy.size.width - tablePadding * 2 - cardSpacing * 4) / 5
             let fixedHeight = isPhoneCompact
                 ? tablePadding * 2 + 20 + 14 + 1 + 20 + tableSpacing * 6
                 : tablePadding * 2 + 24 + 18 + 1 + 24 + tableSpacing * 6
             let heightLimited = (proxy.size.height - fixedHeight) / 4.26
-            let maxCardWidth: CGFloat = horizontalSizeClass == .regular
+            let maxCardWidth: CGFloat = isIPadDevice
                 ? (isLandscape ? 112 : 102)
                 : (isPhoneCompact ? 56 : 62)
             let cardWidth = max(isPhoneCompact ? 32 : 38, min(maxCardWidth, widthLimited, heightLimited))
@@ -392,19 +396,19 @@ struct PokerView: View {
         }
     }
 
-    private func actionPanel(isCompact: Bool, isPhoneCompact: Bool = false, usesHorizontalActions: Bool = false, usesTwoColumnPhoneActions: Bool = false) -> some View {
+    private func actionPanel(isCompact: Bool, isPhoneCompact: Bool = false, isPhonePortrait: Bool = false, usesHorizontalActions: Bool = false, usesTwoColumnPhoneActions: Bool = false) -> some View {
         VStack(spacing: isPhoneCompact ? 4 : (isCompact ? 8 : 12)) {
-            actionStatusArea(isCompact: isCompact, isPhoneCompact: isPhoneCompact)
+            actionStatusArea(isCompact: isCompact, isPhoneCompact: isPhoneCompact, isPhonePortrait: isPhonePortrait)
 
             Text(game.message)
-                .font(.system(size: isPhoneCompact ? 13 : 15, weight: .semibold, design: .rounded))
+                .font(.system(size: isPhonePortrait ? 14 : (isPhoneCompact ? 13 : 15), weight: .semibold, design: .rounded))
                 .foregroundStyle(PokerPalette.mutedInk)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .frame(height: isPhoneCompact ? 20 : (isCompact ? 38 : 42), alignment: .leading)
                 .lineLimit(isPhoneCompact ? 1 : 2)
 
             if game.isPlayerTurn {
-                if horizontalSizeClass == .regular {
+                if isIPadDevice {
                     iPadActionControls(isCompact: isCompact, usesHorizontalActions: usesHorizontalActions)
                 } else {
                     phoneActionControls(isCompact: isPhoneCompact, usesTwoColumns: usesTwoColumnPhoneActions)
@@ -432,14 +436,14 @@ struct PokerView: View {
     }
 
     @ViewBuilder
-    private func actionStatusArea(isCompact: Bool, isPhoneCompact: Bool = false) -> some View {
+    private func actionStatusArea(isCompact: Bool, isPhoneCompact: Bool = false, isPhonePortrait: Bool = false) -> some View {
         if isPhoneCompact {
             VStack(spacing: 4) {
-                actionStatusHeader(isPhoneCompact: true)
+                actionStatusHeader(isPhoneCompact: true, isPhonePortrait: isPhonePortrait)
 
                 if let botAction = game.botAction {
                     Text("机器人：\(botAction.title)")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .font(.system(size: isPhonePortrait ? 13 : 12, weight: .bold, design: .rounded))
                         .foregroundStyle(PokerPalette.feltDeep)
                         .lineLimit(1)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -469,16 +473,16 @@ struct PokerView: View {
         }
     }
 
-    private func actionStatusHeader(isPhoneCompact: Bool) -> some View {
+    private func actionStatusHeader(isPhoneCompact: Bool, isPhonePortrait: Bool = false) -> some View {
         HStack(alignment: .center) {
             Label(game.isPlayerTurn ? "轮到你行动" : resultTitle, systemImage: game.isPlayerTurn ? "hand.tap.fill" : "flag.checkered")
-                .font(.system(size: isPhoneCompact ? 15 : 18, weight: .black, design: .rounded))
+                .font(.system(size: isPhonePortrait ? 16 : (isPhoneCompact ? 15 : 18), weight: .black, design: .rounded))
                 .foregroundStyle(game.isPlayerTurn ? PokerPalette.feltDeep : resultTint)
 
             Spacer(minLength: 8)
 
             Text(game.street.title)
-                .font(.system(size: isPhoneCompact ? 11 : 13, weight: .bold, design: .rounded))
+                .font(.system(size: isPhonePortrait ? 12 : (isPhoneCompact ? 11 : 13), weight: .bold, design: .rounded))
                 .foregroundStyle(PokerPalette.mutedInk)
         }
     }
@@ -573,38 +577,66 @@ struct PokerView: View {
                     ],
                     spacing: 4
                 ) {
-                    actionButton(title: game.callTitle, systemName: game.callAmount == 0 ? "hand.wave.fill" : "arrow.right", tint: SaoleiPalette.blueDeep, compact: true) {
+                    actionButton(
+                        title: game.callAmount == 0 ? "过牌" : "跟注",
+                        amount: game.callAmount == 0 ? "无需下注" : String(game.callAmount),
+                        systemName: game.callAmount == 0 ? "hand.wave.fill" : "arrow.right",
+                        tint: SaoleiPalette.blueDeep,
+                        compact: true,
+                        isPhoneControl: true
+                    ) {
                         game.playerCheckOrCall()
                         syncBetSelection()
                         fireImpact()
                     }
 
-                    actionButton(title: game.currentBet == 0 ? "下注 \(selectedBetAmount)" : "加注 \(selectedBetAmount)", systemName: "arrow.up", tint: PokerPalette.felt, compact: true) {
+                    actionButton(
+                        title: game.currentBet == 0 ? "下注" : "加注",
+                        amount: String(selectedBetAmount),
+                        systemName: "arrow.up",
+                        tint: PokerPalette.felt,
+                        compact: true,
+                        isPhoneControl: true
+                    ) {
                         game.placePlayerBet(to: selectedBetAmount)
                         syncBetSelection()
                         fireImpact()
                     }
                     .disabled(game.betOptions.isEmpty)
 
-                    actionButton(title: "弃牌", systemName: "xmark", tint: PokerPalette.red, compact: true) {
+                    potPresetButton(title: "半底池", amount: game.halfPotBet, compact: true, isPhoneControl: true, matchesActionHeight: true)
+                    potPresetButton(title: "1倍底池", amount: game.fullPotBet, compact: true, isPhoneControl: true, matchesActionHeight: true)
+                    betIncrementButton(isCompact: true, isPhoneControl: true, matchesActionHeight: true)
+
+                    actionButton(title: "弃牌", systemName: "xmark", tint: PokerPalette.red, compact: true, isPhoneControl: true) {
                         game.playerFold()
                         fireImpact()
                     }
-
-                    potPresetButton(title: "半底池", amount: game.halfPotBet, compact: true)
-                    potPresetButton(title: "1倍底池", amount: game.fullPotBet, compact: true)
-                    betIncrementButton(isCompact: true)
                 }
             } else {
                 VStack(spacing: 4) {
                     HStack(spacing: 6) {
-                        actionButton(title: game.callTitle, systemName: game.callAmount == 0 ? "hand.wave.fill" : "arrow.right", tint: SaoleiPalette.blueDeep, compact: true, isPhoneControl: true) {
+                        actionButton(
+                            title: game.callAmount == 0 ? "过牌" : "跟注",
+                            amount: game.callAmount == 0 ? "无需下注" : String(game.callAmount),
+                            systemName: game.callAmount == 0 ? "hand.wave.fill" : "arrow.right",
+                            tint: SaoleiPalette.blueDeep,
+                            compact: true,
+                            isPhoneControl: true
+                        ) {
                             game.playerCheckOrCall()
                             syncBetSelection()
                             fireImpact()
                         }
 
-                        actionButton(title: game.currentBet == 0 ? "下注 \(selectedBetAmount)" : "加注 \(selectedBetAmount)", systemName: "arrow.up", tint: PokerPalette.felt, compact: true, isPhoneControl: true) {
+                        actionButton(
+                            title: game.currentBet == 0 ? "下注" : "加注",
+                            amount: String(selectedBetAmount),
+                            systemName: "arrow.up",
+                            tint: PokerPalette.felt,
+                            compact: true,
+                            isPhoneControl: true
+                        ) {
                             game.placePlayerBet(to: selectedBetAmount)
                             syncBetSelection()
                             fireImpact()
@@ -653,7 +685,7 @@ struct PokerView: View {
         }
     }
 
-    private func potPresetButton(title: String, amount: Int?, compact: Bool, isPhoneControl: Bool = false) -> some View {
+    private func potPresetButton(title: String, amount: Int?, compact: Bool, isPhoneControl: Bool = false, matchesActionHeight: Bool = false) -> some View {
         Button {
             guard let amount else { return }
             selectedBet = amount
@@ -670,7 +702,7 @@ struct PokerView: View {
             .foregroundStyle(PokerPalette.feltDeep)
             .frame(maxWidth: .infinity)
             .padding(.vertical, isPhoneControl ? 6 : (compact ? 4 : 8))
-            .frame(maxWidth: .infinity, minHeight: isPhoneControl ? 48 : (compact ? 40 : 56), alignment: .center)
+            .frame(maxWidth: .infinity, minHeight: matchesActionHeight ? 58 : (isPhoneControl ? 48 : (compact ? 40 : 56)), alignment: .center)
             .background((amount == selectedBet ? PokerPalette.gold.opacity(0.36) : PokerPalette.gold.opacity(0.20)))
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
@@ -679,7 +711,7 @@ struct PokerView: View {
         .opacity(amount == nil ? 0.45 : 1)
     }
 
-    private func betIncrementButton(isCompact: Bool, isPhoneControl: Bool = false) -> some View {
+    private func betIncrementButton(isCompact: Bool, isPhoneControl: Bool = false, matchesActionHeight: Bool = false) -> some View {
         let nextAmount = nextIncrementalBetAmount
         let isUnavailable = game.betOptions.isEmpty
         let isAllIn = !isUnavailable && nextAmount == nil
@@ -700,7 +732,7 @@ struct PokerView: View {
             .foregroundStyle(PokerPalette.feltDeep)
             .frame(maxWidth: .infinity)
             .padding(.vertical, isPhoneControl ? 6 : (isCompact ? 4 : 8))
-            .frame(maxWidth: .infinity, minHeight: isPhoneControl ? 48 : (isCompact ? 40 : 56), alignment: .center)
+            .frame(maxWidth: .infinity, minHeight: matchesActionHeight ? 58 : (isPhoneControl ? 48 : (isCompact ? 40 : 56)), alignment: .center)
             .background(PokerPalette.gold.opacity(isAllIn ? 0.42 : 0.24))
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
@@ -725,17 +757,29 @@ struct PokerView: View {
         return game.betOptions.first(where: { $0 >= desiredAmount }) ?? maximum
     }
 
-    private func actionButton(title: String, systemName: String, tint: Color, compact: Bool = false, isPhoneControl: Bool = false, action: @escaping () -> Void) -> some View {
+    private func actionButton(title: String, amount: String? = nil, systemName: String, tint: Color, compact: Bool = false, isPhoneControl: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Label(title, systemImage: systemName)
-                .font(.system(size: isPhoneControl ? 16 : 15, weight: .black, design: .rounded))
-                .foregroundStyle(tint)
-                .padding(.vertical, isPhoneControl ? 8 : (compact ? 5 : 13))
-                .lineLimit(1)
-                .minimumScaleFactor(compact ? 0.72 : 1)
-                .frame(maxWidth: .infinity, minHeight: isPhoneControl ? 40 : (compact ? 32 : 48), alignment: .center)
-                .background(tint.opacity(0.12))
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            Group {
+                if let amount {
+                    VStack(spacing: 1) {
+                        Label(title, systemImage: systemName)
+                            .font(.system(size: 15, weight: .black, design: .rounded))
+                        Text(amount)
+                            .font(.system(size: 16, weight: .black, design: .rounded))
+                            .monospacedDigit()
+                    }
+                } else {
+                    Label(title, systemImage: systemName)
+                        .font(.system(size: isPhoneControl ? 16 : 15, weight: .black, design: .rounded))
+                }
+            }
+            .foregroundStyle(tint)
+            .padding(.vertical, amount == nil ? (isPhoneControl ? 8 : (compact ? 5 : 13)) : 7)
+            .lineLimit(1)
+            .minimumScaleFactor(compact ? 0.72 : 1)
+            .frame(maxWidth: .infinity, minHeight: amount == nil ? (isPhoneControl ? 58 : (compact ? 32 : 48)) : 58, alignment: .center)
+            .background(tint.opacity(0.12))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(.plain)
     }
@@ -791,7 +835,7 @@ struct PokerView: View {
             return 365
         }
 
-        if horizontalSizeClass == .regular {
+        if isIPadDevice {
             return 430
         }
 
